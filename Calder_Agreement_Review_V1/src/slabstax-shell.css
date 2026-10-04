@@ -213,6 +213,21 @@ body { overflow-x: hidden; }
   font-style: normal !important;
 }
 
+.sidebar nav .nav-section-label {
+  display: block !important;
+  margin: 14px 0 2px !important;
+  padding: 0 12px !important;
+  color: var(--calder-muted) !important;
+  font-size: 0.72rem !important;
+  font-weight: 750 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.06em !important;
+}
+
+.sidebar nav .nav-section-label:first-child {
+  margin-top: 0 !important;
+}
+
 .sidebar-foot {
   margin: auto 0 0 !important;
   padding: 14px !important;
@@ -240,6 +255,7 @@ body { overflow-x: hidden; }
 .sidebar.collapsed .brand > div:last-child,
 .sidebar.collapsed nav button > span,
 .sidebar.collapsed nav button em,
+.sidebar.collapsed nav .nav-section-label,
 .sidebar.collapsed .sidebar-foot {
   display: none !important;
 }
@@ -307,6 +323,7 @@ body { overflow-x: hidden; }
   .sidebar.collapsed .brand > div:last-child,
   .sidebar.collapsed nav button > span,
   .sidebar.collapsed nav button em,
+  .sidebar.collapsed nav .nav-section-label,
   .sidebar.collapsed .sidebar-foot { display: block !important; }
   .sidebar.collapsed nav button { grid-template-columns: 28px minmax(0, 1fr) auto !important; justify-items: initial !important; padding: 11px 12px !important; }
 
