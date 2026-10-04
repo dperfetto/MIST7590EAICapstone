@@ -223,12 +223,64 @@ test("permissions are cumulative and approvers can resolve escalations", () => {
 });
 
 test("review queue handles an empty or fully cleared agreement list", () => {
-  assert.match(workspace, /if \(!current\)/);
+  assert.match(workspace, /queueTab === "completed" \? completedAgreements : queueAgreements/);
   assert.match(workspace, /No agreements are waiting for review/);
-  assert.match(workspace, /queueAgreements\.find/);
+  assert.match(workspace, /visibleAgreements\.find/);
   assert.match(workspace, /const label = \(s\?: string \| null\)/);
   assert.match(workspace, /s\?\.startsWith\("cleared"\)/);
   assert.match(styles, /\.queue-empty-state/);
+});
+
+test("completed reviews are separated from agreements awaiting review", () => {
+  assert.match(workspace, /To be reviewed/);
+  assert.match(workspace, /Completed reviews/);
+  assert.match(workspace, /agreementFindings\.every[\s\S]*\["accepted", "dismissed"\]/);
+  assert.match(workspace, /!completedIds\.has\(agreement\.id\)/);
+  assert.match(workspace, /Review complete/);
+  assert.match(styles, /\.queue-tabs/);
+});
+
+test("agreement register can filter by each available workflow status", () => {
+  assert.match(workspace, /const statuses = useMemo\([\s\S]*new Set\(agreements\.map\(\(a\) => a\.status\)/);
+  assert.match(workspace, /status === "All" \|\| a\.status === status/);
+  assert.match(workspace, /aria-label="Filter by status"/);
+  assert.match(workspace, /statuses\.map\(\(agreementStatus\)/);
+  assert.match(workspace, /setStatus=\{setStatus\}/);
+  assert.match(styles, /\.status-filter/);
+});
+
+test("agreement status rolls up with finding decisions in local and Supabase modes", () => {
+  assert.match(data, /agreementReviewStatus = \(statuses: string\[\], currentStatus: string\)/);
+  assert.match(data, /statuses\.every\(\(status\) => status === "accepted"\)[\s\S]*return "approved"/);
+  assert.match(data, /agreement\.status = nextStatus/);
+  assert.match(data, /\.from\("agreements"\)[\s\S]*\.update\(\{ status: nextStatus \}\)/);
+  assert.match(data, /eventType:[\s\S]*"Agreement approved"/);
+  assert.match(workspace, /"accepted", "approved", "review_complete"/);
+});
+
+test("agreement register and review queue display the same derived review status", () => {
+  assert.match(workspace, /agreementStatusFromFindings = \([\s\S]*statuses\.every\(\(status\) => status === "accepted"\)[\s\S]*return "approved"/);
+  assert.match(workspace, /status: agreementStatusFromFindings\(agreement, findings\)/);
+  assert.match(workspace, /const workspaceData = \{ \.\.\.data, agreements \}/);
+  assert.match(workspace, /<Overview\s+data=\{workspaceData\}/);
+  assert.match(workspace, /<Queue\s+data=\{workspaceData\}/);
+  assert.match(workspace, /<Reports data=\{workspaceData\}/);
+  assert.match(workspace, /completedAgreements = agreements\.filter/);
+  assert.match(workspace, /const statuses = useMemo\([\s\S]*agreements\.map\(\(a\) => a\.status\)/);
+});
+
+test("overview metrics and priority list honor normalized agreement statuses", () => {
+  assert.match(workspace, /label="Approved or cleared"/);
+  assert.match(workspace, /a\.status === "approved" \|\| a\.status\.startsWith\("cleared"\)/);
+  assert.match(workspace, /!\["approved", "review_complete"\]\.includes\(a\.status\)/);
+});
+
+test("finding decisions reject blank or whitespace-only reasons", () => {
+  assert.match(workspace, /disabled=\{busy \|\| !reason\.trim\(\)\}/);
+  assert.match(workspace, /reason:\s*reason\.trim\(\)/);
+  assert.match(data, /decide_finding.*!decisionReason/);
+  assert.match(data, /String\(body\.reason \?\? ""\)\.trim\(\)/);
+  assert.match(schema, /decided_at is null or length\(btrim\(coalesce\(decision_reason, ''\)\)\) > 0/i);
 });
 
 test("playbook explains every detection method and the manual fallback", () => {

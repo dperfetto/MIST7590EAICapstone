@@ -124,9 +124,29 @@ const tone = (s?: string | null) =>
     ? "red-tone"
     : s === "medium" || s === "in_review"
       ? "amber-tone"
-      : s?.startsWith("cleared") || s === "accepted"
+      : s?.startsWith("cleared") || ["accepted", "approved", "review_complete"].includes(s || "")
         ? "green-tone"
         : "slate-tone";
+const agreementStatusFromFindings = (
+  agreement: Agreement,
+  findings: Finding[],
+) => {
+  if (agreement.status.startsWith("cleared")) return agreement.status;
+  const statuses = findings
+    .filter((finding) => finding.agreementId === agreement.id)
+    .map((finding) => finding.status);
+  if (statuses.includes("escalated")) return "escalated";
+  if (statuses.length && statuses.every((status) => status === "accepted"))
+    return "approved";
+  if (
+    statuses.length &&
+    statuses.every((status) => ["accepted", "dismissed"].includes(status))
+  )
+    return "review_complete";
+  if (statuses.some((status) => ["accepted", "dismissed"].includes(status)))
+    return "in_review";
+  return agreement.status;
+};
 const allowedViews: Record<UserRole, string[]> = {
   submitter: ["overview", "intake", "agreements", "profile"],
   reviewer: ["overview", "intake", "queue", "agreements", "reports", "audit", "profile"],
@@ -166,6 +186,7 @@ export default function Workspace() {
     [selected, setSelected] = useState<string | null>(null),
     [search, setSearch] = useState(""),
     [type, setType] = useState("All"),
+    [status, setStatus] = useState("All"),
     [busy, setBusy] = useState(false),
     [sidebarOpen, setSidebarOpen] = useState(() => window.innerWidth > 780);
   const refresh = async () => {
@@ -180,18 +201,30 @@ export default function Workspace() {
   useEffect(() => {
     if (data && !allowedViews[data.me.role].includes(view)) setView("overview");
   }, [data, view]);
-  const agreements = useMemo(() => data?.agreements ?? [], [data?.agreements]),
-    findings = data?.findings ?? [];
+  const findings = useMemo(() => data?.findings ?? [], [data?.findings]);
+  const agreements = useMemo(
+    () =>
+      (data?.agreements ?? []).map((agreement) => ({
+        ...agreement,
+        status: agreementStatusFromFindings(agreement, findings),
+      })),
+    [data?.agreements, findings],
+  );
+  const statuses = useMemo(
+    () => [...new Set(agreements.map((a) => a.status).filter(Boolean))].sort(),
+    [agreements],
+  );
   const filtered = useMemo(
     () =>
       agreements.filter(
         (a) =>
           (type === "All" || a.agreementType === type) &&
+          (status === "All" || a.status === status) &&
           `${a.vendor} ${a.id} ${a.businessUnit}`
             .toLowerCase()
             .includes(search.toLowerCase()),
       ),
-    [agreements, type, search],
+    [agreements, type, status, search],
   );
   const agreement = agreements.find((a) => a.id === selected) ?? agreements[0];
   const post = async (body: Record<string, unknown>) => {
@@ -221,6 +254,7 @@ export default function Workspace() {
         <p>Preparing Calder workspace…</p>
       </div>
     );
+  const workspaceData = { ...data, agreements };
   const canSubmit = true;
   const canReview = ["reviewer", "approver", "administrator"].includes(data.me.role);
   const visibleNav = nav.filter(([id]) => allowedViews[data.me.role].includes(id));
@@ -323,7 +357,7 @@ export default function Workspace() {
         <div className="content">
           {view === "overview" && (
             <Overview
-              data={data}
+              data={workspaceData}
               onQueue={() => setView(canReview ? "queue" : "agreements")}
               onSelect={(id) => {
                 setSelected(id);
@@ -336,7 +370,7 @@ export default function Workspace() {
           )}{" "}
           {view === "queue" && canReview && (
             <Queue
-              data={data}
+              data={workspaceData}
               selected={agreement}
               setSelected={setSelected}
               decide={post}
@@ -351,6 +385,9 @@ export default function Workspace() {
               setSearch={setSearch}
               type={type}
               setType={setType}
+              status={status}
+              setStatus={setStatus}
+              statuses={statuses}
               onSelect={canReview ? (id) => {
                 setSelected(id);
                 setView("queue");
@@ -358,7 +395,7 @@ export default function Workspace() {
             />
           )}
           {view === "playbook" && data.me.role === "administrator" && <Playbook rules={data.rules} update={post} />}{" "}
-          {view === "reports" && <Reports data={data} />}{" "}
+          {view === "reports" && <Reports data={workspaceData} />} {" "}
           {view === "audit" && <AuditLog events={data.audit} />}
           {view === "profile" && <ProfileAccess me={data.me} users={data.users || []} update={post} />}
         </div>
@@ -405,7 +442,9 @@ function Overview({
     lowConfidence = open.filter((f) => f.confidence < 85),
     overdue = data.agreements.filter(
       (a) =>
-        new Date(a.neededBy) < new Date() && !a.status.startsWith("cleared"),
+        new Date(a.neededBy) < new Date() &&
+        !a.status.startsWith("cleared") &&
+        !["approved", "review_complete"].includes(a.status),
     );
   return (
     <>
@@ -449,11 +488,13 @@ function Overview({
           icon={Gavel}
         />
         <Kpi
-          label="Cleared this cycle"
+          label="Approved or cleared"
           value={
-            data.agreements.filter((a) => a.status.startsWith("cleared")).length
+            data.agreements.filter(
+              (a) => a.status === "approved" || a.status.startsWith("cleared"),
+            ).length
           }
-          note="Including conditions"
+          note="Includes cleared with conditions"
           icon={CheckCircle2}
         />
       </section>
@@ -470,7 +511,11 @@ function Overview({
           </CardHeader>
           <CardContent className="rows">
             {data.agreements
-              .filter((a) => !a.status.startsWith("cleared"))
+              .filter(
+                (a) =>
+                  !a.status.startsWith("cleared") &&
+                  !["approved", "review_complete"].includes(a.status),
+              )
               .slice(0, 4)
               .map((a) => {
                 const fs = data.findings.filter(
@@ -860,31 +905,32 @@ function Queue({
 }) {
   const [active, setActive] = useState<Finding | null>(null),
     [decision, setDecision] = useState("accepted"),
-    [reason, setReason] = useState("");
+    [reason, setReason] = useState(""),
+    [queueTab, setQueueTab] = useState<"pending" | "completed">("pending");
+  const completedAgreements = data.agreements.filter((agreement) => {
+    const agreementFindings = data.findings.filter(
+      (finding) => finding.agreementId === agreement.id,
+    );
+    return (
+      agreement.status?.startsWith("cleared") ||
+      (agreementFindings.length > 0 &&
+        agreementFindings.every((finding) =>
+          ["accepted", "dismissed"].includes(finding.status),
+        ))
+    );
+  });
+  const completedIds = new Set(completedAgreements.map((agreement) => agreement.id));
   const queueAgreements = data.agreements.filter(
-    (agreement) => !agreement.status?.startsWith("cleared"),
+    (agreement) => !completedIds.has(agreement.id),
   );
+  const visibleAgreements =
+    queueTab === "completed" ? completedAgreements : queueAgreements;
   const current =
-    queueAgreements.find((agreement) => agreement.id === selected?.id) ??
-    queueAgreements[0];
+    visibleAgreements.find((agreement) => agreement.id === selected?.id) ??
+    visibleAgreements[0];
   const fs = current
     ? data.findings.filter((finding) => finding.agreementId === current.id)
     : [];
-
-  if (!current) {
-    return (
-      <div className="queue-empty-state" role="status">
-        <CheckCircle2 size={34} />
-        <div>
-          <h2>No agreements are waiting for review</h2>
-          <p>
-            The queue will populate after a Submitter uploads an agreement or
-            routes an agreement to guided manual review.
-          </p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="review-layout">
@@ -892,13 +938,33 @@ function Queue({
         <div className="queue-filter">
           <strong>Review queue</strong>
           <span>
-            {queueAgreements.length}{" "}
-            agreements
+            {visibleAgreements.length} agreements
           </span>
         </div>
-        {queueAgreements.map((a) => (
+        <div className="queue-tabs" role="tablist" aria-label="Review status">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={queueTab === "pending"}
+            aria-controls="review-queue-panel"
+            onClick={() => setQueueTab("pending")}
+          >
+            To be reviewed <span>{queueAgreements.length}</span>
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={queueTab === "completed"}
+            aria-controls="review-queue-panel"
+            onClick={() => setQueueTab("completed")}
+          >
+            Completed reviews <span>{completedAgreements.length}</span>
+          </button>
+        </div>
+        <div id="review-queue-panel" role="tabpanel" className="queue-items">
+        {visibleAgreements.map((a) => (
             <button
-              className={current.id === a.id ? "selected" : ""}
+              className={current?.id === a.id ? "selected" : ""}
               key={a.id}
               onClick={() => setSelected(a.id)}
             >
@@ -923,7 +989,16 @@ function Queue({
               </Badge>
             </button>
           ))}
+          {!visibleAgreements.length && (
+            <p className="queue-list-empty">
+              {queueTab === "pending"
+                ? "No agreements are waiting for review."
+                : "No completed reviews yet."}
+            </p>
+          )}
+        </div>
       </aside>
+      {current ? (
       <section className="review-detail">
         <div className="review-title">
           <div>
@@ -936,8 +1011,11 @@ function Queue({
               {current.playbookVersion}
             </p>
           </div>
-          <Badge variant="outline" className={tone(current.status)}>
-            {label(current.status)}
+          <Badge
+            variant="outline"
+            className={completedIds.has(current.id) ? "green-tone" : tone(current.status)}
+          >
+            {completedIds.has(current.id) ? "Review complete" : label(current.status)}
           </Badge>
         </div>
         <div className="summary-strip">
@@ -1006,8 +1084,27 @@ function Queue({
             </div>
           )}
         </div>
-        <ManualFinding agreementId={current.id} submit={decide} />
+        {!completedIds.has(current.id) && (
+          <ManualFinding agreementId={current.id} submit={decide} />
+        )}
       </section>
+      ) : (
+        <div className="queue-empty-state" role="status">
+          <CheckCircle2 size={34} />
+          <div>
+            <h2>
+              {queueTab === "pending"
+                ? "No agreements are waiting for review"
+                : "No completed reviews yet"}
+            </h2>
+            <p>
+              {queueTab === "pending"
+                ? "The queue will populate after a Submitter uploads an agreement or routes an agreement to guided manual review."
+                : "A review appears here after every finding has been accepted or dismissed, or the agreement has been cleared."}
+            </p>
+          </div>
+        </div>
+      )}
       <Dialog open={!!active} onOpenChange={(o) => !o && setActive(null)}>
         <DialogContent>
           <DialogHeader>
@@ -1034,17 +1131,24 @@ function Queue({
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               placeholder="Explain the basis for this decision…"
+              aria-invalid={!reason.trim()}
             />
+            {!reason.trim() && (
+              <p className="field-error" role="alert">
+                Enter a reason before recording this decision.
+              </p>
+            )}
             <Button
-              disabled={busy}
+              disabled={busy || !reason.trim()}
               onClick={async () => {
                 if (
                   active &&
+                  reason.trim() &&
                   (await decide({
                     action: "decide_finding",
                     findingId: active.id,
                     decision,
-                    reason,
+                    reason: reason.trim(),
                   }))
                 )
                   setActive(null);
@@ -1137,6 +1241,9 @@ function Agreements({
   setSearch,
   type,
   setType,
+  status,
+  setStatus,
+  statuses,
   onSelect,
 }: {
   rows: Agreement[];
@@ -1144,6 +1251,9 @@ function Agreements({
   setSearch: (s: string) => void;
   type: string;
   setType: (s: string) => void;
+  status: string;
+  setStatus: (s: string) => void;
+  statuses: string[];
   onSelect?: (s: string) => void;
 }) {
   return (
@@ -1153,7 +1263,7 @@ function Agreements({
           <CardTitle>Agreement register</CardTitle>
           <p>All versions, workflow states, and due dates</p>
         </div>
-        <div>
+        <div className="agreement-filters">
           <div className="global-search">
             <Search size={16} />
             <input
@@ -1171,6 +1281,19 @@ function Agreements({
               {agreementTypes.map((agreementType) => (
                 <SelectItem key={agreementType} value={agreementType}>
                   {agreementType}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={status} onValueChange={setStatus}>
+            <SelectTrigger className="status-filter" aria-label="Filter by status">
+              <SelectValue placeholder="All statuses" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="All">All statuses</SelectItem>
+              {statuses.map((agreementStatus) => (
+                <SelectItem key={agreementStatus} value={agreementStatus}>
+                  {label(agreementStatus)}
                 </SelectItem>
               ))}
             </SelectContent>
