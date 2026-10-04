@@ -1370,65 +1370,62 @@ body {
   width: 170px;
 }
 
-.method-guide {
-  margin-top: 16px;
-  padding: 20px 22px;
-  border: 1px solid var(--calder-border);
-  border-radius: 14px;
-  box-shadow: 0 10px 28px rgba(15, 35, 55, 0.05);
-  background: #fff;
-}
-.method-guide-heading {
+.rule-head-method {
   display: flex;
-  align-items: flex-start;
-  gap: 10px;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
 }
-.method-guide-heading svg {
-  flex: none;
+.method-guide-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 0;
+  background: transparent;
+  padding: 0;
   color: var(--calder-accent);
-  margin-top: 1px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: normal;
+  cursor: pointer;
 }
-.method-guide h3 {
-  margin: 0;
-  color: #17243a;
-  font-size: 0.99rem;
+.method-guide-trigger:hover {
+  text-decoration: underline;
 }
-.method-guide-heading p,
-.method-guide-footnote {
-  margin: 4px 0 0;
-  color: #697789;
-  font-size: 0.79rem;
-  line-height: 1.5;
-}
-.method-guide dl {
+.method-guide-list {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
-  margin: 16px 0;
+  margin: 4px 0 0;
 }
-.method-guide dl > div {
+.method-guide-list > div {
   padding: 11px 12px;
   border: 1px solid #e3e8ee;
   border-radius: 8px;
   background: #f8fafc;
 }
-.method-guide dt {
+.method-guide-list dt {
   color: #173149;
   font-size: 0.83rem;
   font-weight: 800;
 }
-.method-guide dd {
+.method-guide-list dd {
   margin: 4px 0 0;
   color: #5d6b7b;
   font-size: 0.77rem;
   line-height: 1.45;
 }
 .method-guide-footnote {
+  margin: 12px 0 0;
   padding-top: 12px;
   border-top: 1px solid #e6ebf0;
+  color: #697789;
+  font-size: 0.79rem;
+  line-height: 1.5;
 }
-@media (max-width: 760px) {
-  .method-guide dl {
+@media (max-width: 480px) {
+  .method-guide-list {
     grid-template-columns: 1fr;
   }
 }
