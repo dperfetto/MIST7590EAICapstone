@@ -82,6 +82,19 @@ export const supabase = connected ? createClient(url, key) : null;
 const LOCAL_KEY = "calder-demo-v1-6";
 const now = () => new Date().toISOString();
 const uid = () => crypto.randomUUID();
+const agreementReviewStatus = (statuses: string[], currentStatus: string) => {
+  if (statuses.includes("escalated")) return "escalated";
+  if (statuses.length && statuses.every((status) => status === "accepted"))
+    return "approved";
+  if (
+    statuses.length &&
+    statuses.every((status) => ["accepted", "dismissed"].includes(status))
+  )
+    return "review_complete";
+  if (statuses.some((status) => ["accepted", "dismissed"].includes(status)))
+    return "in_review";
+  return currentStatus;
+};
 
 const seed: Data = {
   me: {
@@ -596,6 +609,10 @@ export async function getWorkspace(): Promise<Data> {
 }
 
 export async function performAction(body: Record<string, unknown>) {
+  const decisionReason = String(body.reason ?? "").trim();
+  if (body.action === "decide_finding" && !decisionReason)
+    throw new Error("A reason is required for this decision.");
+
   if (!supabase) {
     const d = localRead();
     const actor = d.me.name;
@@ -651,13 +668,40 @@ export async function performAction(body: Record<string, unknown>) {
       const f = d.findings.find((x) => x.id === body.findingId);
       if (f) {
         f.status = String(body.decision);
-        f.decisionReason = String(body.reason);
+        f.decisionReason = decisionReason;
+        const agreement = d.agreements.find((item) => item.id === f.agreementId);
+        if (agreement) {
+          const nextStatus = agreementReviewStatus(
+            d.findings
+              .filter((finding) => finding.agreementId === agreement.id)
+              .map((finding) => finding.status),
+            agreement.status,
+          );
+          if (nextStatus !== agreement.status) {
+            agreement.status = nextStatus;
+            d.audit.unshift({
+              id: uid(),
+              agreementId: agreement.id,
+              actorName: actor,
+              eventType:
+                nextStatus === "approved"
+                  ? "Agreement approved"
+                  : nextStatus === "escalated"
+                    ? "Agreement escalated"
+                    : nextStatus === "review_complete"
+                      ? "Agreement review completed"
+                      : "Agreement review in progress",
+              detail: `Agreement status updated to ${nextStatus.replaceAll("_", " ")}.`,
+              createdAt: now(),
+            });
+          }
+        }
         d.audit.unshift({
           id: uid(),
           agreementId: f.agreementId,
           actorName: actor,
           eventType: `Finding ${body.decision}`,
-          detail: `${f.provision}: ${body.reason}`,
+          detail: `${f.provision}: ${decisionReason}`,
           createdAt: now(),
         });
       }
@@ -789,7 +833,7 @@ export async function performAction(body: Record<string, unknown>) {
       .from("findings")
       .update({
         status: body.decision,
-        decision_reason: body.reason,
+        decision_reason: decisionReason,
         decided_at: now(),
       })
       .eq("id", body.findingId);
@@ -801,8 +845,46 @@ export async function performAction(body: Record<string, unknown>) {
         user_id: user.id,
         actor_name: actor,
         event_type: `Finding ${body.decision}`,
-        detail: `${f.provision}: ${body.reason}`,
+        detail: `${f.provision}: ${decisionReason}`,
       });
+    const [{ data: findingStatuses, error: findingsError }, { data: agreement, error: agreementError }] = await Promise.all([
+      supabase
+        .from("findings")
+        .select("status")
+        .eq("agreement_id", f.agreement_id),
+      supabase
+        .from("agreements")
+        .select("status")
+        .eq("id", f.agreement_id)
+        .single(),
+    ]);
+    if (findingsError) throw findingsError;
+    if (agreementError) throw agreementError;
+    const nextStatus = agreementReviewStatus(
+      (findingStatuses || []).map((finding) => finding.status),
+      agreement.status,
+    );
+    if (nextStatus !== agreement.status) {
+      const { error: statusError } = await supabase
+        .from("agreements")
+        .update({ status: nextStatus })
+        .eq("id", f.agreement_id);
+      if (statusError) throw statusError;
+      await supabase.from("audit_events").insert({
+        agreement_id: f.agreement_id,
+        user_id: user.id,
+        actor_name: actor,
+        event_type:
+          nextStatus === "approved"
+            ? "Agreement approved"
+            : nextStatus === "escalated"
+              ? "Agreement escalated"
+              : nextStatus === "review_complete"
+                ? "Agreement review completed"
+                : "Agreement review in progress",
+        detail: `Agreement status updated to ${nextStatus.replaceAll("_", " ")}.`,
+      });
+    }
     return;
   }
   if (body.action === "add_manual_finding") {

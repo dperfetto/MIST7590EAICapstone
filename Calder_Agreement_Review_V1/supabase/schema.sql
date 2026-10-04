@@ -93,6 +93,11 @@ create table if not exists public.findings (
 
 alter table public.findings add column if not exists analysis_method text not null default 'manual' check (analysis_method in ('ai','deterministic','manual'));
 
+-- A recorded decision must include a meaningful reason; undecided findings may leave it null.
+alter table public.findings drop constraint if exists findings_decision_reason_nonblank_check;
+alter table public.findings add constraint findings_decision_reason_nonblank_check
+  check (decided_at is null or length(btrim(coalesce(decision_reason, ''))) > 0);
+
 -- Existing deployments may still have the v1.5 constraint. Historical gap,
 -- deviation, and acceptable records are retained, but every new baseline
 -- analysis path writes only `present`.
