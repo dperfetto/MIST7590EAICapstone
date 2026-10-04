@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle,
   Archive,
@@ -106,16 +106,38 @@ type Data = {
   aiStatus: string;
   users?: { id: string; name: string; role: UserRole }[];
 };
-const nav = [
-  ["overview", "Overview", LayoutDashboard],
-  ["intake", "New intake", Upload],
-  ["queue", "Review queue", FileSearch],
-  ["agreements", "Agreements", Archive],
-  ["playbook", "Playbooks", BookOpenCheck],
-  ["reports", "Reporting", BarChart3],
-  ["audit", "Audit log", ShieldCheck],
-  ["profile", "Profile & access", UserRoundCog],
-] as const;
+type NavIcon = typeof LayoutDashboard;
+type NavItem = readonly [string, string, NavIcon];
+type NavSection = { label: string | null; items: NavItem[] };
+const navSections: NavSection[] = [
+  {
+    label: null,
+    items: [["overview", "Overview", LayoutDashboard]],
+  },
+  {
+    label: "Work",
+    items: [
+      ["intake", "New intake", Upload],
+      ["queue", "Review queue", FileSearch],
+      ["agreements", "Agreements", Archive],
+    ],
+  },
+  {
+    label: "Insights",
+    items: [
+      ["reports", "Reporting", BarChart3],
+      ["audit", "Audit log", ShieldCheck],
+    ],
+  },
+  {
+    label: "Admin",
+    items: [
+      ["playbook", "Playbooks", BookOpenCheck],
+      ["profile", "Profile & access", UserRoundCog],
+    ],
+  },
+];
+const nav = navSections.flatMap((section) => section.items);
 const label = (s?: string | null) =>
   s?.trim()
     ? s.replaceAll("_", " ").replace(/\b\w/g, (c) => c.toUpperCase())
@@ -258,7 +280,14 @@ export default function Workspace() {
   const workspaceData = { ...data, agreements };
   const canSubmit = true;
   const canReview = ["reviewer", "approver", "administrator"].includes(data.me.role);
-  const visibleNav = nav.filter(([id]) => allowedViews[data.me.role].includes(id));
+  const visibleNavSections = navSections
+    .map((section) => ({
+      ...section,
+      items: section.items.filter(([id]) =>
+        allowedViews[data.me.role].includes(id),
+      ),
+    }))
+    .filter((section) => section.items.length > 0);
   return (
     <div className={`app-shell ${sidebarOpen ? "" : "sidebar-collapsed"}`}>
       <Toaster richColors position="top-right" />
@@ -288,23 +317,30 @@ export default function Workspace() {
           {sidebarOpen ? <ChevronLeft size={18} /> : <ChevronRight size={18} />}
         </button>
         <nav>
-          {visibleNav.map(([id, n, Icon]) => (
-            <button
-              key={id}
-              className={view === id ? "active" : ""}
-              aria-label={n}
-              title={n}
-              onClick={() => {
-                setView(id);
-                if (window.innerWidth <= 780) setSidebarOpen(false);
-              }}
-            >
-              <Icon size={18} />
-              <span>{n}</span>
-              {id === "queue" && (
-                <em>{findings.filter((f) => f.status === "open").length}</em>
+          {visibleNavSections.map((section) => (
+            <Fragment key={section.label ?? "primary"}>
+              {section.label && (
+                <span className="nav-section-label">{section.label}</span>
               )}
-            </button>
+              {section.items.map(([id, n, Icon]) => (
+                <button
+                  key={id}
+                  className={view === id ? "active" : ""}
+                  aria-label={n}
+                  title={n}
+                  onClick={() => {
+                    setView(id);
+                    if (window.innerWidth <= 780) setSidebarOpen(false);
+                  }}
+                >
+                  <Icon size={18} />
+                  <span>{n}</span>
+                  {id === "queue" && (
+                    <em>{findings.filter((f) => f.status === "open").length}</em>
+                  )}
+                </button>
+              ))}
+            </Fragment>
           ))}
         </nav>
         <div className="sidebar-foot">
