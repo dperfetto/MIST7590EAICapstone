@@ -263,13 +263,6 @@ body {
   font-size: 0.85rem;
   margin-top: 3px;
 }
-.notice button {
-  border: 0;
-  background: transparent;
-  color: #0b6676;
-  font-weight: 700;
-  font-size: 0.87rem;
-}
 .kpis {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
