@@ -12,6 +12,7 @@ import {
   FileSearch,
   FileText,
   Gavel,
+  HelpCircle,
   LayoutDashboard,
   Loader2,
   PanelLeftOpen,
@@ -1456,7 +1457,40 @@ function Playbook({
           <div className="rule-head">
             <span>Provision</span>
             <span>Presence description</span>
-            <span>Method</span>
+            <span className="rule-head-method">
+              Method
+              <Dialog>
+                <DialogTrigger asChild>
+                  <button type="button" className="method-guide-trigger">
+                    <HelpCircle size={14} />
+                    What do these methods mean?
+                  </button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Detection method guide</DialogTitle>
+                    <DialogDescription>
+                      These methods describe how Calder can identify presence. They do
+                      not determine whether contract language is acceptable.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <dl className="method-guide-list">
+                    {detectionMethodDefinitions.map((method) => (
+                      <div key={method.name}>
+                        <dt>{method.name}</dt>
+                        <dd>{method.description}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                  <p className="method-guide-footnote">
+                    Automatic mode attempts hosted analysis with deterministic
+                    corroboration. If the hosted service is unavailable, Calder runs the
+                    deterministic path automatically; manual review remains available at
+                    all times.
+                  </p>
+                </DialogContent>
+              </Dialog>
+            </span>
             <span>Active</span>
           </div>
           {shown.map((r) => (
@@ -1485,32 +1519,6 @@ function Playbook({
           </span>
         </div>
       </div>
-      <section className="method-guide" aria-labelledby="method-guide-title">
-        <div className="method-guide-heading">
-          <FileSearch size={19} />
-          <div>
-            <h3 id="method-guide-title">Detection method guide</h3>
-            <p>
-              These methods describe how Calder can identify presence. They do
-              not determine whether contract language is acceptable.
-            </p>
-          </div>
-        </div>
-        <dl>
-          {detectionMethodDefinitions.map((method) => (
-            <div key={method.name}>
-              <dt>{method.name}</dt>
-              <dd>{method.description}</dd>
-            </div>
-          ))}
-        </dl>
-        <p className="method-guide-footnote">
-          Automatic mode attempts hosted analysis with deterministic
-          corroboration. If the hosted service is unavailable, Calder runs the
-          deterministic path automatically; manual review remains available at
-          all times.
-        </p>
-      </section>
     </>
   );
 }
