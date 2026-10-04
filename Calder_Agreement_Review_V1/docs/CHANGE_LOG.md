@@ -33,11 +33,13 @@
 - Added an accessible Detection Method Guide to the Playbooks page covering Regex, AI, Hybrid, Regex + AI, and Manual fallback.
 - Added regression coverage for the queue failure and method definitions.
 
-## 2026-09-15 - Sponsor-initiated baseline scope reduction
+## 2026-09-09 - Sponsor-initiated baseline scope reduction
 
 ### Source
 
-The project sponsor clarified that the original brief implicitly required the team to derive Calder standard positions from Bonterms and Common Paper agreements. That domain work was not documented or accounted for in the original scope. The sponsor removed it from the required baseline.
+**MIST 7590E — Change Notice 1**, "Amendment to Project Brief v1, Sections 2, 4, 5, and 8," emailed by the project sponsor, Nikhil Srinivasan (nsrini@uga.view.usg.edu), to all project teams on Wed 9/9/2026 at 1:11 PM via eLearning Commons. Full verbatim text preserved in `docs/SPONSOR_CORRESPONDENCE.md`.
+
+The sponsor clarified that the original brief implicitly required the team to derive Calder standard positions from Bonterms and Common Paper agreements: read the agreements, work out an acceptable version of each provision, and build a table of standard positions with departure rules. That domain work was not documented or accounted for in the original scope. The sponsor removed it from the required baseline, in the sponsor's words: "That is a large piece of domain work sitting in front of your application build. I did not write it down and I did not account for it in the scope. This is my error. I am cutting it."
 
 ### Required baseline after the change
 

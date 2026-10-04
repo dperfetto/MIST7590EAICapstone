@@ -1,0 +1,13 @@
+document,provision,editType,expectedBefore,detectedBefore,beforeCorrect,expectedAfter,detectedAfter,afterCorrect
+bonterms-cloud-terms,Cap on Liability,change-liability-cap,true,false,false,true,false,false
+bonterms-cloud-terms,Renewal Notice,shorten-notice-period,true,false,false,true,false,false
+commonpaper-csa,Auto Renewal,remove-protection,true,true,true,false,false,true
+commonpaper-software-license,Exclusivity,insert-unusual-clause,false,true,false,true,true,true
+bonterms-mutual-nda,Governing Law,remove-protection,true,true,true,false,false,true
+bonterms-sla,Cap on Liability,insert-unusual-clause,false,false,true,true,true,true
+bonterms-psa,Termination for Convenience,remove-protection,true,true,true,false,true,false
+commonpaper-psa,Insurance,remove-protection,true,true,true,false,false,true
+commonpaper-psa,Warranty Duration,insert-unusual-clause,false,false,true,true,true,true
+commonpaper-mutual-nda,Assignment / Control,insert-unusual-clause,true,true,true,true,true,true
+bonterms-dpa,Audit Rights,remove-protection,true,true,true,false,true,false
+commonpaper-dpa,Audit Rights,remove-protection,true,true,true,false,true,false

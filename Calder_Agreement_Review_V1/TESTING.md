@@ -41,6 +41,26 @@ python3 evaluation/evaluate_cuad.py \
 
 The committed deterministic baseline was run over all 510 CUAD contracts. Category-level metrics and positive counts are in `evaluation/results/metrics.csv`. These values describe candidate retrieval, not a legal conclusion. Any CUAD-trained classifier must be evaluated on contracts excluded from training.
 
+## Independent check (modified standard-form agreements)
+
+CUAD is public and may have leaked into model training or into how the deterministic candidate
+phrases themselves were tuned. Section 6.3 requires a second check set built from documents and
+edits nothing could have memorized.
+
+```bash
+npm run evaluate:independent-check
+```
+
+This runs the actual shipped deterministic analyzer (imported directly from
+`src/lib/candidateRetrieval.ts`) against 10 standard-form agreements from Section 7.2 (5 Bonterms,
+5 Common Paper) and 10 deliberately modified versions of them, authored and hand-labeled by the
+team. Committed result: **16/24 checks correct (66.7%)**, with the failures clustering into three
+explainable causes (defined-term drafting invisible to phrase matching; a removed protection
+leaving a residual false positive elsewhere in the document; one category's own documented
+exclusion not being enforced). See `evaluation/independent-check/RESULTS.md` for the full
+breakdown and `evaluation/independent-check/labels.json` for the ground truth each check was
+written against before the harness ran.
+
 ## PDF ingestion benchmark
 
 ```bash

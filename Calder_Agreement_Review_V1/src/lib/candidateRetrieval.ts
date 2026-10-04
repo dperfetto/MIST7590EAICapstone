@@ -1,4 +1,4 @@
-import taxonomyData from "@/data/cuad-calder-taxonomy.json";
+import taxonomyData from "../data/cuad-calder-taxonomy.json" with { type: "json" };
 
 export type TaxonomyEntry = {
   calderProvision: string;
