@@ -1,0 +1,186 @@
+{
+  "description": "Section 6.3 independent check: ground truth for 10 deliberately modified standard-form agreements from Section 7.2 (Bonterms, Common Paper). Ground truth is authored by the team, not derived from CUAD, because these documents and edits were created for this check and the team knows the answer by construction.",
+  "documents": [
+    {
+      "id": "bonterms-cloud-terms",
+      "originalFile": "originals/bonterms-cloud-terms.md",
+      "modifiedFile": "modified/bonterms-cloud-terms-mod.md",
+      "agreementType": "Software Subscription",
+      "source": "Bonterms Cloud Terms, Version 1.0 (CC BY 4.0)",
+      "edits": [
+        {
+          "provision": "Cap on Liability",
+          "editType": "change-liability-cap",
+          "description": "Section 16.5 'General Cap' definition changed from 12 months of fees to 3 months of fees.",
+          "expectedBefore": true,
+          "expectedAfter": true,
+          "note": "Still present after the edit; only the cap value changed. Drafted as a defined term ('General Cap') rather than with the literal phrase 'liability cap'."
+        },
+        {
+          "provision": "Renewal Notice",
+          "editType": "shorten-notice-period",
+          "description": "Section 14.1 non-renewal notice window changed from 'at least 30 days' to 'at least 5 days'.",
+          "expectedBefore": true,
+          "expectedAfter": true,
+          "note": "Still present after the edit; only the notice period changed."
+        }
+      ]
+    },
+    {
+      "id": "commonpaper-csa",
+      "originalFile": "originals/commonpaper-csa.md",
+      "modifiedFile": "modified/commonpaper-csa-mod.md",
+      "agreementType": "Software Subscription",
+      "source": "Common Paper Cloud Service Agreement (CC BY 4.0)",
+      "edits": [
+        {
+          "provision": "Auto Renewal",
+          "editType": "remove-protection",
+          "description": "Section 5.1 automatic-renewal language removed; the agreement now ends at the end of the Subscription Period with no renewal.",
+          "expectedBefore": true,
+          "expectedAfter": false
+        }
+      ]
+    },
+    {
+      "id": "commonpaper-software-license",
+      "originalFile": "originals/commonpaper-software-license.md",
+      "modifiedFile": "modified/commonpaper-software-license-mod.md",
+      "agreementType": "Licensing",
+      "source": "Common Paper Software License Agreement (CC BY 4.0)",
+      "edits": [
+        {
+          "provision": "Exclusivity",
+          "editType": "insert-unusual-clause",
+          "description": "Inserted a new Section 1.8 'Exclusive Dealing' clause requiring Customer to use Provider as its sole software vendor for competing functionality. The original has only an unrelated non-exclusive license grant, which the Calder taxonomy explicitly excludes from this category.",
+          "expectedBefore": false,
+          "expectedAfter": true,
+          "note": "Confirmed false positive on the UNMODIFIED original (see RESULTS.md): it is detected as present even before the edit, because it contains the phrase 'non-exclusive ... license' and the deterministic matcher has no logic to apply the taxonomy's own exclusion for license-grant language."
+        }
+      ]
+    },
+    {
+      "id": "bonterms-mutual-nda",
+      "originalFile": "originals/bonterms-mutual-nda.md",
+      "modifiedFile": "modified/bonterms-mutual-nda-mod.md",
+      "agreementType": "Mutual NDA",
+      "source": "Bonterms Mutual NDA, Version 1.0 (CC BY 4.0)",
+      "edits": [
+        {
+          "provision": "Governing Law",
+          "editType": "remove-protection",
+          "description": "Section 10 'Governing Law and Courts' removed entirely.",
+          "expectedBefore": true,
+          "expectedAfter": false,
+          "note": "Correctly detected as absent after removal — no residual false positive (see RESULTS.md). None of the document's remaining text happens to contain any Governing Law candidate phrase."
+        }
+      ]
+    },
+    {
+      "id": "bonterms-sla",
+      "originalFile": "originals/bonterms-sla.md",
+      "modifiedFile": "modified/bonterms-sla-mod.md",
+      "agreementType": "Software Subscription",
+      "source": "Bonterms Service Level Agreement, Version 1.0 (CC BY 4.0)",
+      "edits": [
+        {
+          "provision": "Cap on Liability",
+          "editType": "insert-unusual-clause",
+          "description": "Inserted a new Section 5a creating an SLA-specific aggregate liability cap, written in plain language ('aggregate liability ... will not exceed') rather than Bonterms' defined-term style.",
+          "expectedBefore": false,
+          "expectedAfter": true,
+          "note": "Pairs with the bonterms-cloud-terms case: same provision, plain phrasing instead of a defined term, to test whether the drafting style (not the provision itself) explains any detection gap."
+        }
+      ]
+    },
+    {
+      "id": "bonterms-psa",
+      "originalFile": "originals/bonterms-psa.md",
+      "modifiedFile": "modified/bonterms-psa-mod.md",
+      "agreementType": "Professional Services",
+      "source": "Bonterms Professional Services Agreement, Version 1.2 (CC BY 4.0)",
+      "edits": [
+        {
+          "provision": "Termination for Convenience",
+          "editType": "remove-protection",
+          "description": "Section 11.2(b) 'Termination for Convenience' removed; only for-cause termination (Section 11.3) remains.",
+          "expectedBefore": true,
+          "expectedAfter": false,
+          "note": "Confirmed false positive after removal (see RESULTS.md): the matcher instead latches onto an unrelated IP-assignment/attorney-in-fact clause elsewhere in the 42-page document that happens to contain the generic phrase 'for any reason', which is also one of this category's candidate phrases."
+      ]
+    },
+    {
+      "id": "commonpaper-psa",
+      "originalFile": "originals/commonpaper-psa.md",
+      "modifiedFile": "modified/commonpaper-psa-mod.md",
+      "agreementType": "Professional Services",
+      "source": "Common Paper Professional Services Agreement (CC BY 4.0)",
+      "edits": [
+        {
+          "provision": "Insurance",
+          "editType": "remove-protection",
+          "description": "Section 10 'Insurance' removed entirely.",
+          "expectedBefore": true,
+          "expectedAfter": false
+        },
+        {
+          "provision": "Warranty Duration",
+          "editType": "insert-unusual-clause",
+          "description": "Inserted a new Section 6.4 'Warranty Duration' stating the warranty applies for 12 months from delivery. The original states a 45-day claim/cure procedure but never states how long the underlying warranty itself runs.",
+          "expectedBefore": false,
+          "expectedAfter": true
+        }
+      ]
+    },
+    {
+      "id": "commonpaper-mutual-nda",
+      "originalFile": "originals/commonpaper-mutual-nda.md",
+      "modifiedFile": "modified/commonpaper-mutual-nda-mod.md",
+      "agreementType": "Mutual NDA",
+      "source": "Common Paper Mutual NDA (CC BY 4.0)",
+      "edits": [
+        {
+          "provision": "Assignment / Control",
+          "editType": "insert-unusual-clause",
+          "description": "Section 11 'General' consent-based assignment clause replaced with an unusual clause permitting free assignment to anyone, including a direct competitor, without notice or consent.",
+          "expectedBefore": true,
+          "expectedAfter": true,
+          "note": "Still present after the edit — the provision is unusual in substance, not absent. Tests whether detection is robust to atypical wording of a still-present clause, the brief's named example edit."
+        }
+      ]
+    },
+    {
+      "id": "bonterms-dpa",
+      "originalFile": "originals/bonterms-dpa.md",
+      "modifiedFile": "modified/bonterms-dpa-mod.md",
+      "agreementType": "Data Processing Addendum",
+      "source": "Bonterms Data Protection Addendum, Version 1.0 (CC BY 4.0)",
+      "edits": [
+        {
+          "provision": "Audit Rights",
+          "editType": "remove-protection",
+          "description": "Section 9.3 'Customer Audit' removed entirely, along with the 9.2(c) cross-reference to it. Only Provider's unilateral sharing of its own audit reports remains — Customer has no right to initiate an audit or inspection.",
+          "expectedBefore": true,
+          "expectedAfter": false,
+          "note": "Confirmed false positive after removal (see RESULTS.md): the retained sentence 'any audit rights granted by Data Protection Laws will be satisfied by the Audit Reports' still contains the literal candidate phrase 'audit rights', even though it refers to rights granted by statute rather than by Provider, and no customer-initiated audit mechanism remains in the document."
+      ]
+    },
+    {
+      "id": "commonpaper-dpa",
+      "originalFile": "originals/commonpaper-dpa.md",
+      "modifiedFile": "modified/commonpaper-dpa-mod.md",
+      "agreementType": "Data Processing Addendum",
+      "source": "Common Paper DPA (CC BY 4.0)",
+      "edits": [
+        {
+          "provision": "Audit Rights",
+          "editType": "remove-protection",
+          "description": "Section 5.1 'Audit Rights' (which granted Customer the right to conduct audits, including inspections) replaced with a 'Compliance Reporting' clause that explicitly prohibits Customer from requesting an audit or inspection, substituting a periodic written questionnaire.",
+          "expectedBefore": true,
+          "expectedAfter": false,
+          "note": "Confirmed false positive after removal (see RESULTS.md): the replacement text still contains the literal phrase 'audit of' inside the very sentence prohibiting audits ('will not conduct ... a third-party audit of Provider's facilities'). The deterministic matcher has no negation handling, so it detects the phrase without noticing it sits inside a prohibition."
+        }
+      ]
+    }
+  ]
+}

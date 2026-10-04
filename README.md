@@ -163,15 +163,23 @@ npm run lint      # code-quality validation
 npm run check     # lint + tests + production build
 npm run build     # production build
 npm run preview   # preview the production build
+npm run evaluate:independent-check   # Section 6.3 check against 10 modified standard-form agreements
 ```
 
 ## Documentation
 
 - `docs/PROJECT_PLAN.md` / `docs/Calder_Agreement_Review_Project_Plan.docx` — delivery plan, workflows, architecture, evaluation results
 - `docs/ARCHITECTURE_AND_WORKFLOW.md` — application, fallback, and evaluation flows
-- `docs/CHANGE_LOG.md` — sponsor-initiated scope change (Sept 15) and what it removed/added
+- `docs/CHANGE_LOG.md` — sponsor-initiated scope change (Sept 9) and what it removed/added
+- `docs/SPONSOR_CORRESPONDENCE.md` — verbatim text of sponsor change notices
+- `docs/COMPONENT_PROVENANCE_LOG.md` — Section 12.1 provenance log: which modules are AI-generated, hand-written, or substantially modified, and by whom
 - `docs/DECISION_AND_AMBIGUITY_LOG.md` — authentication, retention, conditions, confidence, hosting, and known gaps
+- `docs/CONFIDENCE_THRESHOLD_NOTE.md` — Section 6.4 threshold note: why 85, measured miss rates by category, and what counsel should and shouldn't rely on
 - `docs/HOSTING_COMPARISON.md` — zero-budget deployment options
 - `docs/STRETCH_BACKLOG.md` — deferred standards/deviation/gap work, and what has to be true before building it
 - `evaluation/cuad_to_calder_mapping.csv` / `evaluation/results/` — CUAD category mapping and precision/recall by category
+- `evaluation/LABELING_HANDBOOK_SPOTCHECK.md` — Section 6.1 spot-check of real CUAD labels against category definitions
+- `evaluation/CATEGORY_RELIABILITY.md` — Section 6.2: which categories are reliable, which aren't, and why
+- `evaluation/independent-check/RESULTS.md` — Section 6.3 independent check: 10 modified Bonterms/Common Paper agreements nothing could have memorized
 - `LICENSES/CUAD_ATTRIBUTION.md` — CUAD source, license, and citation
+- `LICENSES/BONTERMS_COMMONPAPER_ATTRIBUTION.md` — Bonterms/Common Paper source, license, and use in the independent check

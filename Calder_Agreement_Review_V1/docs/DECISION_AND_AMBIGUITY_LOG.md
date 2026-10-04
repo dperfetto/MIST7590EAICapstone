@@ -37,6 +37,8 @@
 
 **Reason:** A model's self-reported confidence is not accepted as a probability. The current values express observable evidence signals and must be recalibrated against held-out reviewer decisions before production use.
 
+**See also:** `docs/CONFIDENCE_THRESHOLD_NOTE.md` for the Section 6.4 threshold note — why 85, what it means in practice (measured miss rates by category), and what the threshold cannot tell you (recall, not confidence, governs silent misses).
+
 ## Severity
 
 **Decision:** Baseline findings have no risk severity. Legacy severity fields remain neutral compatibility data only. If stretch risk work is approved, severity will be a small sponsor-defined category/finding label produced by the playbook engine, never by the extractor.

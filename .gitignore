@@ -4,3 +4,4 @@ node_modules/
 dist/
 *.tsbuildinfo
 .DS_Store
+Calder_Agreement_Review_V1/evaluation/data/

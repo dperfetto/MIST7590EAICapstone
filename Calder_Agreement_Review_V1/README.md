@@ -135,10 +135,17 @@ npm run preview   # preview the production build
 - `docs/Calder_Agreement_Review_Project_Plan.docx` - presentation-ready Word project plan with workflows, architecture, evaluation results, and deployment guidance
 - `docs/ARCHITECTURE_AND_WORKFLOW.md` - application, fallback, and evaluation flows
 - `docs/CHANGE_LOG.md` - sponsor-initiated scope change
+- `docs/SPONSOR_CORRESPONDENCE.md` - verbatim sponsor change notices
+- `docs/COMPONENT_PROVENANCE_LOG.md` - Section 12.1 provenance log: which modules are AI-generated, hand-written, or substantially modified, and by whom
 - `docs/DECISION_AND_AMBIGUITY_LOG.md` - authentication, retention, conditions, confidence, hosting, and known gaps
+- `docs/CONFIDENCE_THRESHOLD_NOTE.md` - Section 6.4 threshold note: why 85, measured miss rates by category, and what counsel should and shouldn't rely on
 - `docs/HOSTING_COMPARISON.md` - zero-budget deployment options and latency measurement protocol
 - `docs/STRETCH_BACKLOG.md` - deferred standards/deviation/gap work
 - `evaluation/cuad_to_calder_mapping.csv` - all 41 CUAD categories mapped or marked out of scope
+- `evaluation/LABELING_HANDBOOK_SPOTCHECK.md` - Section 6.1 spot-check of real CUAD labels against category definitions
+- `evaluation/CATEGORY_RELIABILITY.md` - Section 6.2: which categories are reliable, which aren't, and why
+- `evaluation/independent-check/RESULTS.md` - Section 6.3 independent check: 10 modified Bonterms/Common Paper agreements nothing could have memorized
 - `LICENSES/CUAD_ATTRIBUTION.md` - CUAD source, license, and citation
+- `LICENSES/BONTERMS_COMMONPAPER_ATTRIBUTION.md` - Bonterms/Common Paper source, license, and use in the independent check
 
 All automated findings are proposals requiring human verification. Use only approved contract data and follow the data policies of every configured service.
