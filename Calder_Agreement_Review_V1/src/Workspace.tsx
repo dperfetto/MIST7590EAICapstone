@@ -383,7 +383,11 @@ export default function Workspace() {
                 aria-label="Search agreements"
                 placeholder="Search vendor, ID, unit…"
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e) => {
+                  const next = e.target.value;
+                  setSearch(next);
+                  if (next.trim() && view !== "agreements") setView("agreements");
+                }}
               />
             </div>
             {canSubmit && <Button onClick={() => setView("intake")}> 
@@ -494,7 +498,6 @@ function Overview({
             classification remains available if analysis fails.
           </span>
         </div>
-        <button>View policy</button>
       </div>
       <section className="kpis">
         <Kpi
