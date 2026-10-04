@@ -492,13 +492,7 @@ function Overview({
   onSelect: (id: string) => void;
 }) {
   const open = data.findings.filter((f) => f.status === "open"),
-    lowConfidence = open.filter((f) => f.confidence < 85),
-    overdue = data.agreements.filter(
-      (a) =>
-        new Date(a.neededBy) < new Date() &&
-        !a.status.startsWith("cleared") &&
-        !["approved", "review_complete"].includes(a.status),
-    );
+    lowConfidence = open.filter((f) => f.confidence < 85);
   return (
     <>
       <div className="notice">
@@ -550,100 +544,70 @@ function Overview({
           icon={CheckCircle2}
         />
       </section>
-      <section className="overview-grid">
-        <Card>
-          <CardHeader className="card-head">
-            <div>
-              <CardTitle>Priority queue</CardTitle>
-              <p>Ordered by needed-by date and confidence</p>
-            </div>
-            <Button variant="outline" onClick={onQueue}>
-              Open queue <ChevronRight size={15} />
-            </Button>
-          </CardHeader>
-          <CardContent className="rows">
-            {data.agreements
-              .filter(
-                (a) =>
-                  !a.status.startsWith("cleared") &&
-                  !["approved", "review_complete"].includes(a.status),
-              )
-              .slice(0, 4)
-              .map((a) => {
-                const fs = data.findings.filter(
-                  (f) => f.agreementId === a.id && f.status === "open",
-                );
-                return (
-                  <button
-                    className="agreement-row"
-                    key={a.id}
-                    onClick={() => onSelect(a.id)}
+      <Card>
+        <CardHeader className="card-head">
+          <div>
+            <CardTitle>Priority queue</CardTitle>
+            <p>Ordered by needed-by date and confidence</p>
+          </div>
+          <Button variant="outline" onClick={onQueue}>
+            Open queue <ChevronRight size={15} />
+          </Button>
+        </CardHeader>
+        <CardContent className="rows">
+          {data.agreements
+            .filter(
+              (a) =>
+                !a.status.startsWith("cleared") &&
+                !["approved", "review_complete"].includes(a.status),
+            )
+            .slice(0, 4)
+            .map((a) => {
+              const fs = data.findings.filter(
+                (f) => f.agreementId === a.id && f.status === "open",
+              );
+              return (
+                <button
+                  className="agreement-row"
+                  key={a.id}
+                  onClick={() => onSelect(a.id)}
+                >
+                  <div className="file-icon">
+                    <FileText size={18} />
+                  </div>
+                  <div className="row-main">
+                    <strong>{a.vendor}</strong>
+                    <span>
+                      {a.id} · {a.agreementType} · {a.businessUnit}
+                    </span>
+                  </div>
+                  <div>
+                    <Badge variant="outline" className={tone(a.status)}>
+                      {label(a.status)}
+                    </Badge>
+                    <span className="due">
+                      Due{" "}
+                      {new Date(a.neededBy).toLocaleDateString(undefined, {
+                        month: "short",
+                        day: "numeric",
+                      })}
+                    </span>
+                  </div>
+                  <strong
+                    className={
+                      fs.some((f) => f.confidence < 85)
+                        ? "risk-high"
+                        : "risk-neutral"
+                    }
                   >
-                    <div className="file-icon">
-                      <FileText size={18} />
-                    </div>
-                    <div className="row-main">
-                      <strong>{a.vendor}</strong>
-                      <span>
-                        {a.id} · {a.agreementType} · {a.businessUnit}
-                      </span>
-                    </div>
-                    <div>
-                      <Badge variant="outline" className={tone(a.status)}>
-                        {label(a.status)}
-                      </Badge>
-                      <span className="due">
-                        Due{" "}
-                        {new Date(a.neededBy).toLocaleDateString(undefined, {
-                          month: "short",
-                          day: "numeric",
-                        })}
-                      </span>
-                    </div>
-                    <strong
-                      className={
-                        fs.some((f) => f.confidence < 85)
-                          ? "risk-high"
-                          : "risk-neutral"
-                      }
-                    >
-                      {fs.length} flags
-                    </strong>
-                    <ChevronRight size={17} />
-                  </button>
-                );
-              })}
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>Review health</CardTitle>
-            <p>Current agreement workload</p>
-          </CardHeader>
-          <CardContent>
-            <div className="donut">
-              <div>
-                <strong>78%</strong>
-                <span>within target</span>
-              </div>
-            </div>
-            <div className="health-list">
-              <span>
-                <i className="dot green" />
-                Within target <b>7</b>
-              </span>
-              <span>
-                <i className="dot amber" />
-                Due in 48 hours <b>2</b>
-              </span>
-              <span>
-                <i className="dot red" />
-                Overdue <b>{overdue.length}</b>
-              </span>
-            </div>
-          </CardContent>
-        </Card>
-      </section>
+                    {fs.length} flags
+                  </strong>
+                  <ChevronRight size={17} />
+                </button>
+              );
+            })}
+        </CardContent>
+      </Card>
     </>
   );
 }
@@ -1524,6 +1488,12 @@ function Playbook({
 }
 function Reports({ data }: { data: Data }) {
   const categories = [...new Set(data.findings.map((f) => f.provision))];
+  const overdue = data.agreements.filter(
+    (a) =>
+      new Date(a.neededBy) < new Date() &&
+      !a.status.startsWith("cleared") &&
+      !["approved", "review_complete"].includes(a.status),
+  );
   return (
     <>
       <section className="kpis">
@@ -1598,6 +1568,34 @@ function Reports({ data }: { data: Data }) {
                 </div>
               );
             })}
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Review health</CardTitle>
+            <p>Current agreement workload</p>
+          </CardHeader>
+          <CardContent>
+            <div className="donut">
+              <div>
+                <strong>78%</strong>
+                <span>within target</span>
+              </div>
+            </div>
+            <div className="health-list">
+              <span>
+                <i className="dot green" />
+                Within target <b>7</b>
+              </span>
+              <span>
+                <i className="dot amber" />
+                Due in 48 hours <b>2</b>
+              </span>
+              <span>
+                <i className="dot red" />
+                Overdue <b>{overdue.length}</b>
+              </span>
+            </div>
           </CardContent>
         </Card>
       </div>
