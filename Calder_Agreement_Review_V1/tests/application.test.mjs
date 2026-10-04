@@ -265,7 +265,7 @@ test("agreement register and review queue display the same derived review status
   assert.match(workspace, /<Overview\s+data=\{workspaceData\}/);
   assert.match(workspace, /<Queue\s+data=\{workspaceData\}/);
   assert.match(workspace, /<Reports data=\{workspaceData\}/);
-  assert.match(workspace, /completedAgreements = agreements\.filter/);
+  assert.match(workspace, /completedAgreements = data\.agreements\.filter/);
   assert.match(workspace, /const statuses = useMemo\([\s\S]*agreements\.map\(\(a\) => a\.status\)/);
 });
 
