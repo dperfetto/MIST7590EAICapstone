@@ -1,5 +1,5 @@
 "use client";
-import { Fragment, useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertTriangle,
   Archive,
@@ -212,6 +212,11 @@ export default function Workspace() {
     [status, setStatus] = useState("All"),
     [busy, setBusy] = useState(false),
     [sidebarOpen, setSidebarOpen] = useState(() => window.innerWidth > 780);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const runSearch = () => {
+    if (search.trim() && view !== "agreements") setView("agreements");
+    searchInputRef.current?.focus();
+  };
   const refresh = async () => {
     const r = await fetch("/api/workspace"),
       j = await r.json();
@@ -378,8 +383,11 @@ export default function Workspace() {
           </div>
           <div className="top-actions">
             <div className="global-search">
-              <Search size={17} />
+              <button type="button" aria-label="Search" onClick={runSearch}>
+                <Search size={17} />
+              </button>
               <input
+                ref={searchInputRef}
                 aria-label="Search agreements"
                 placeholder="Search vendor, ID, unit…"
                 value={search}
@@ -387,6 +395,9 @@ export default function Workspace() {
                   const next = e.target.value;
                   setSearch(next);
                   if (next.trim() && view !== "agreements") setView("agreements");
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") runSearch();
                 }}
               />
             </div>
@@ -1327,6 +1338,7 @@ function Agreements({
   statuses: string[];
   onSelect?: (s: string) => void;
 }) {
+  const searchInputRef = useRef<HTMLInputElement>(null);
   return (
     <Card>
       <CardHeader className="table-tools">
@@ -1336,8 +1348,15 @@ function Agreements({
         </div>
         <div className="agreement-filters">
           <div className="global-search">
-            <Search size={16} />
+            <button
+              type="button"
+              aria-label="Search"
+              onClick={() => searchInputRef.current?.focus()}
+            >
+              <Search size={16} />
+            </button>
             <input
+              ref={searchInputRef}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search"
