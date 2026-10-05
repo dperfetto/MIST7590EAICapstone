@@ -1,7 +1,7 @@
 # MIST7590EAICapstone
 Group 3 Project
 
-# Calder Agreement Review — Portable Edition v1.6.4
+# Calder Agreement Review
 
 Calder is a React/Vite vendor-agreement workflow that identifies whether selected provisions are present, shows supporting source text and confidence, and routes every result to a human reviewer. It runs locally, deploys to Vercel, and uses Supabase for authentication, persistence, row-level security, and private document storage.
 
