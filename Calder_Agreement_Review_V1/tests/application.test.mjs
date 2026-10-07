@@ -318,3 +318,28 @@ test("Vercel deployment dependencies and large PDF code are controlled", () => {
   assert.match(viteConfig, /pdf-engine/);
   assert.match(viteConfig, /chunkSizeWarningLimit:\s*1350/);
 });
+
+test("an escalated finding can be resolved but not escalated again", () => {
+  assert.match(workspace, /active\?\.status !== "escalated" && \(\s*<SelectItem value="escalated">/);
+  assert.match(workspace, /setActive\(f\);\s*setDecision\("accepted"\);/);
+  assert.equal(
+    (data.match(/status === "escalated" && body\.decision === "escalated"/g) || []).length,
+    2,
+  );
+});
+
+test("agreements without automated findings are routed to manual review", () => {
+  assert.match(workspace, /analysisMode === "manual" \? "manual_review_required" : "ready_for_review"/);
+  assert.match(workspace, /!statuses\.length && agreement\.status === "ready_for_review"\)\s*return "manual_review_required"/);
+});
+
+test("manual findings keep a zero confidence and verify their source text", () => {
+  assert.match(data, /Number\.isFinite\(confidence\)/);
+  assert.doesNotMatch(data, /Number\(body\.confidence\) \|\| 100/);
+  assert.equal((data.match(/confidence: manualConfidence\(body\.confidence\)/g) || []).length, 2);
+  assert.match(data, /taxonomy\.some\(\(entry\) => entry\.calderProvision === body\.provision\)/);
+  assert.match(analyzer, /export function sourceTextInDocument/);
+  assert.match(analyzer, /\.from\("agreements"\)\s*\.download\(storageKey\)/);
+  assert.match(workspace, /text && !sourceTextInDocument\(f\.sourceText, text\)/);
+  assert.match(workspace, /<ManualFinding key=\{current\.id\} agreement=\{current\}/);
+});

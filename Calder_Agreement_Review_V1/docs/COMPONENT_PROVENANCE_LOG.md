@@ -5,7 +5,7 @@ Required by Section 12.1 of the project brief. One row per significant module, t
 generated code**. This replaces the general syllabus's prompt-and-response appendix, which doesn't
 work for agentic coding tools.
 
-The whole application was built with AI coding assistance (Claude Code) throughout, with the team
+The whole application was built with AI coding assistance throughout, with the team
 directing scope, reviewing output, and making the product/legal judgment calls (category
 selection, scope cuts, what ships). A fourth label, **third-party / vendored**, is used below for
 code or text the team did not write and did not ask an AI assistant to write — library internals

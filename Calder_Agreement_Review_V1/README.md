@@ -134,6 +134,7 @@ npm run preview   # preview the production build
 - `docs/PROJECT_PLAN.md` - delivery plan and definition of done
 - `docs/Calder_Agreement_Review_Project_Plan.docx` - presentation-ready Word project plan with workflows, architecture, evaluation results, and deployment guidance
 - `docs/ARCHITECTURE_AND_WORKFLOW.md` - application, fallback, and evaluation flows
+- `docs/DOCUMENT_REVIEW_PATHS.md` - how AI, deterministic, and manual submissions are reviewed, and how confidence scores are calculated
 - `docs/CHANGE_LOG.md` - sponsor-initiated scope change
 - `docs/SPONSOR_CORRESPONDENCE.md` - verbatim sponsor change notices
 - `docs/COMPONENT_PROVENANCE_LOG.md` - Section 12.1 provenance log: which modules are AI-generated, hand-written, or substantially modified, and by whom
