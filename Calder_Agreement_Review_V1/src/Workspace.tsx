@@ -394,6 +394,7 @@ const detectionMethodDefinitions = [
       "A reviewer selects the provision and source text when automation is unavailable or needs correction.",
   },
 ] as const;
+const WORKSPACE_LOAD_TIMEOUT_MS = 15000;
 export default function Workspace() {
   const [data, setData] = useState<Data | null>(null),
     [view, setView] = useState("overview"),
@@ -414,8 +415,33 @@ export default function Workspace() {
     if (!r.ok) throw new Error(j.error);
     setData(j);
   };
+  // The Toaster is not mounted until data loads, so initial-load failures are
+  // shown on the loading screen with a Retry button instead of as a toast.
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const loadWorkspace = async (attempts = 1) => {
+    setLoadError(null);
+    for (let attempt = 1; ; attempt++) {
+      try {
+        await Promise.race([
+          refresh(),
+          new Promise<never>((_, reject) =>
+            setTimeout(
+              () => reject(new Error("The workspace took too long to load.")),
+              WORKSPACE_LOAD_TIMEOUT_MS,
+            ),
+          ),
+        ]);
+        return;
+      } catch (e) {
+        if (attempt >= attempts) {
+          setLoadError(e instanceof Error ? e.message : "Could not load the workspace.");
+          return;
+        }
+      }
+    }
+  };
   useEffect(() => {
-    refresh().catch((e) => toast.error(e.message));
+    void loadWorkspace(2);
   }, []);
   useEffect(() => {
     if (data && !allowedViews[data.me.role].includes(view)) setView("overview");
@@ -467,7 +493,15 @@ export default function Workspace() {
     }
   };
   if (!data)
-    return (
+    return loadError ? (
+      <div className="loading" role="alert">
+        <p className="loading-error-title">We couldn't load your Calder workspace.</p>
+        <p className="loading-error-detail">{loadError}</p>
+        <Button className="loading-retry" onClick={() => void loadWorkspace()}>
+          Retry
+        </Button>
+      </div>
+    ) : (
       <div className="loading">
         <div className="loader" />
         <p>Preparing Calder workspace…</p>

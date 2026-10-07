@@ -1244,6 +1244,17 @@ body {
 .loading p {
   font-size: 0.8rem;
 }
+.loading .loading-error-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #24303f;
+}
+.loading .loading-error-detail {
+  margin: 6px 0 14px;
+}
+.loading-retry {
+  justify-self: center;
+}
 @keyframes spin {
   to {
     transform: rotate(360deg);
