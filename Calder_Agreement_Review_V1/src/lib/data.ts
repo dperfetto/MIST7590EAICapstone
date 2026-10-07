@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import { taxonomy } from "./candidateRetrieval";
 
 export type UserRole = "submitter" | "reviewer" | "approver" | "administrator";
 export const agreementTypes = [
@@ -608,10 +609,30 @@ export async function getWorkspace(): Promise<Data> {
   };
 }
 
+// A manual confidence of 0 is a real value; only a missing or non-numeric
+// entry falls back to 100.
+const manualConfidence = (value: unknown) => {
+  const confidence = value === "" || value == null ? NaN : Number(value);
+  return Number.isFinite(confidence)
+    ? Math.max(0, Math.min(100, confidence))
+    : 100;
+};
+
+const manualFindingDetail = (body: Record<string, unknown>) =>
+  body.sourceVerified
+    ? `${body.provision} added; source text verified against the stored agreement.`
+    : `${body.provision} added; source text could not be verified because the agreement file was unavailable.`;
+
 export async function performAction(body: Record<string, unknown>) {
   const decisionReason = String(body.reason ?? "").trim();
   if (body.action === "decide_finding" && !decisionReason)
     throw new Error("A reason is required for this decision.");
+  if (body.action === "add_manual_finding") {
+    if (!taxonomy.some((entry) => entry.calderProvision === body.provision))
+      throw new Error("Choose a provision from the playbook categories.");
+    if (!String(body.sourceText ?? "").trim())
+      throw new Error("Paste the exact source text from the agreement.");
+  }
 
   if (!supabase) {
     const d = localRead();
@@ -666,6 +687,8 @@ export async function performAction(body: Record<string, unknown>) {
     }
     if (body.action === "decide_finding") {
       const f = d.findings.find((x) => x.id === body.findingId);
+      if (f?.status === "escalated" && body.decision === "escalated")
+        throw new Error("An escalated finding must be accepted or dismissed.");
       if (f) {
         f.status = String(body.decision);
         f.decisionReason = decisionReason;
@@ -713,7 +736,7 @@ export async function performAction(body: Record<string, unknown>) {
         provision: String(body.provision),
         findingType: "present",
         severity: "medium",
-        confidence: Math.max(0, Math.min(100, Number(body.confidence) || 100)),
+        confidence: manualConfidence(body.confidence),
         sourceText: String(body.sourceText),
         reason: String(body.reason || "Provision language identified manually."),
         status: "open",
@@ -724,7 +747,7 @@ export async function performAction(body: Record<string, unknown>) {
         agreementId: String(body.agreementId),
         actorName: actor,
         eventType: "Manual finding added",
-        detail: `${body.provision} added with source evidence.`,
+        detail: manualFindingDetail(body),
         createdAt: now(),
       });
     }
@@ -825,10 +848,12 @@ export async function performAction(body: Record<string, unknown>) {
   if (body.action === "decide_finding") {
     const { data: f, error: q } = await supabase
       .from("findings")
-      .select("agreement_id,provision")
+      .select("agreement_id,provision,status")
       .eq("id", body.findingId)
       .single();
     if (q) throw q;
+    if (f.status === "escalated" && body.decision === "escalated")
+      throw new Error("An escalated finding must be accepted or dismissed.");
     const { error } = await supabase
       .from("findings")
       .update({
@@ -896,13 +921,20 @@ export async function performAction(body: Record<string, unknown>) {
         provision: body.provision,
         finding_type: "present",
         severity: "medium",
-        confidence: Math.max(0, Math.min(100, Number(body.confidence) || 100)),
+        confidence: manualConfidence(body.confidence),
         source_text: body.sourceText,
         reason: body.reason || "Provision language identified manually.",
         status: "open",
         analysis_method: "manual",
       });
     if (error) throw error;
+    await supabase.from("audit_events").insert({
+      agreement_id: body.agreementId,
+      user_id: user.id,
+      actor_name: actor,
+      event_type: "Manual finding added",
+      detail: manualFindingDetail(body),
+    });
     return;
   }
   if (body.action === "add_analysis_findings") {

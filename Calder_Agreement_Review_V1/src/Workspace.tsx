@@ -51,10 +51,17 @@ import { Toaster, toast } from "sonner";
 import {
   analyzeExtractedText,
   extractDocumentText,
+  loadAgreementText,
+  rememberAgreementText,
+  sourceTextInDocument,
   type AnalysisFinding,
   type AnalysisMode,
 } from "@/lib/analyze";
-import { taxonomyDescription } from "@/lib/candidateRetrieval";
+import {
+  entriesForAgreementType,
+  taxonomy,
+  taxonomyDescription,
+} from "@/lib/candidateRetrieval";
 import { agreementTypes, roleLabels, type UserRole } from "@/lib/data";
 type Agreement = {
   id: string;
@@ -63,6 +70,7 @@ type Agreement = {
   businessUnit: string;
   neededBy: string;
   filename: string;
+  storageKey?: string | null;
   status: string;
   playbookVersion: string;
   createdAt: string;
@@ -151,6 +159,169 @@ const tone = (s?: string | null) =>
       : s?.startsWith("cleared") || ["accepted", "approved", "review_complete"].includes(s || "")
         ? "green-tone"
         : "slate-tone";
+// Needed-by dates are stored as YYYY-MM-DD. Parse them as local calendar
+// dates; `new Date("2026-09-08")` is UTC midnight and shows as Sep 7 in
+// US time zones.
+const parseDueDate = (value?: string | null) => {
+  const day = value?.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  const date = day
+    ? new Date(Number(day[1]), Number(day[2]) - 1, Number(day[3]))
+    : new Date(value ?? "");
+  return Number.isNaN(date.getTime()) ? null : date;
+};
+const daysUntilDue = (value?: string | null) => {
+  const due = parseDueDate(value);
+  if (!due) return null;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  due.setHours(0, 0, 0, 0);
+  return Math.round((due.getTime() - today.getTime()) / 86_400_000);
+};
+const formatDueDate = (
+  value?: string | null,
+  options?: Intl.DateTimeFormatOptions,
+) => parseDueDate(value)?.toLocaleDateString(undefined, options) ?? "No date";
+const statusGuide: { status: string; meaning: string; next: string }[] = [
+  {
+    status: "ready_for_review",
+    meaning: "Analysis finished and flags are waiting to be checked.",
+    next: "Reviewer",
+  },
+  {
+    status: "manual_review_required",
+    meaning:
+      "There are no automated findings (manual mode, analysis unavailable, or nothing matched), so provisions must be identified by hand.",
+    next: "Reviewer",
+  },
+  {
+    status: "in_review",
+    meaning: "Some flags have been decided; others are still open.",
+    next: "Reviewer",
+  },
+  {
+    status: "escalated",
+    meaning: "A reviewer sent at least one flag up for a final decision.",
+    next: "Approver",
+  },
+  {
+    status: "review_complete",
+    meaning: "Every flag was accepted or dismissed.",
+    next: "No one — finished",
+  },
+  {
+    status: "approved",
+    meaning: "Every flag was accepted.",
+    next: "No one — finished",
+  },
+  {
+    status: "cleared_with_conditions",
+    meaning: "An approver cleared the agreement with conditions noted.",
+    next: "No one — finished",
+  },
+];
+type GuideStep = { title: string; detail: string; view?: string; action?: string };
+const gettingStarted: Record<UserRole, GuideStep[]> = {
+  submitter: [
+    {
+      title: "Submit an agreement",
+      detail:
+        "Upload a searchable PDF or TXT, choose the agreement type, and set a needed-by date so reviewers can prioritize it.",
+      view: "intake",
+      action: "New intake",
+    },
+    {
+      title: "Track its status",
+      detail:
+        "The Agreements page shows where each of your submissions is in review.",
+      view: "agreements",
+      action: "Agreements",
+    },
+    {
+      title: "Wait for a human decision",
+      detail:
+        "A reviewer checks every flag against the contract text. You'll see the status change to Review Complete or Approved.",
+    },
+  ],
+  reviewer: [
+    {
+      title: "Open the review queue",
+      detail: "Start with the agreements due soonest — the list below is already in that order.",
+      view: "queue",
+      action: "Review queue",
+    },
+    {
+      title: "Check each flag's source text",
+      detail:
+        "Read the quoted clause and confirm it really is the named provision. Add a manual finding if something was missed.",
+    },
+    {
+      title: "Accept, dismiss, or escalate",
+      detail:
+        "Every decision needs a reason and is written to the audit log. Escalate when an approver should decide.",
+      view: "audit",
+      action: "Audit log",
+    },
+  ],
+  approver: [
+    {
+      title: "Resolve escalations",
+      detail:
+        "The Awaiting approver tile counts agreements a reviewer escalated. Open them from the review queue.",
+      view: "queue",
+      action: "Review queue",
+    },
+    {
+      title: "Set the final disposition",
+      detail:
+        "Your decision and its reason close the escalation and become part of the audit record.",
+    },
+    {
+      title: "Watch the trends",
+      detail: "Reporting shows provision frequency and overdue work across business units.",
+      view: "reports",
+      action: "Reporting",
+    },
+  ],
+  administrator: [
+    {
+      title: "Check the playbooks",
+      detail:
+        "Playbooks control which provisions are looked for in each agreement type.",
+      view: "playbook",
+      action: "Playbooks",
+    },
+    {
+      title: "Assign roles",
+      detail:
+        "Give people the submitter, reviewer, or approver role so they see the right work.",
+      view: "profile",
+      action: "Profile & access",
+    },
+    {
+      title: "Review like everyone else",
+      detail: "Administrators can also work the review queue and resolve escalations.",
+      view: "queue",
+      action: "Review queue",
+    },
+  ],
+};
+const guideDismissedKey = (email: string) =>
+  `calder-getting-started-dismissed:${email}`;
+const readGuideDismissed = (email: string) => {
+  try {
+    return localStorage.getItem(guideDismissedKey(email)) === "1";
+  } catch {
+    return false;
+  }
+};
+const writeGuideDismissed = (email: string, dismissed: boolean) => {
+  try {
+    if (dismissed) localStorage.setItem(guideDismissedKey(email), "1");
+    else localStorage.removeItem(guideDismissedKey(email));
+  } catch {
+    // Storage can be blocked; the guide simply reappears next visit.
+  }
+};
 const agreementStatusFromFindings = (
   agreement: Agreement,
   findings: Finding[],
@@ -159,6 +330,10 @@ const agreementStatusFromFindings = (
   const statuses = findings
     .filter((finding) => finding.agreementId === agreement.id)
     .map((finding) => finding.status);
+  // No automated findings (manual mode, failed analysis, or nothing matched)
+  // means someone has to identify provisions by hand.
+  if (!statuses.length && agreement.status === "ready_for_review")
+    return "manual_review_required";
   if (statuses.includes("escalated")) return "escalated";
   if (statuses.length && statuses.every((status) => status === "accepted"))
     return "approved";
@@ -412,6 +587,11 @@ export default function Workspace() {
             <Overview
               data={workspaceData}
               onQueue={() => setView(canReview ? "queue" : "agreements")}
+              onNavigate={(next) =>
+                setView(
+                  allowedViews[data.me.role].includes(next) ? next : "overview",
+                )
+              }
               onSelect={(id) => {
                 setSelected(id);
                 setView(canReview ? "queue" : "agreements");
@@ -482,42 +662,113 @@ function Kpi({
     </Card>
   );
 }
+function DueChip({ neededBy }: { neededBy: string }) {
+  const days = daysUntilDue(neededBy);
+  if (days === null || days > 3) return null;
+  const text =
+    days < 0
+      ? `Overdue ${-days} ${-days === 1 ? "day" : "days"}`
+      : days === 0
+        ? "Due today"
+        : `Due in ${days} ${days === 1 ? "day" : "days"}`;
+  return (
+    <em className={`due-chip ${days < 0 ? "red-tone" : "amber-tone"}`}>
+      {text}
+    </em>
+  );
+}
 function Overview({
   data,
   onQueue,
   onSelect,
+  onNavigate,
 }: {
   data: Data;
   onQueue: () => void;
   onSelect: (id: string) => void;
+  onNavigate: (view: string) => void;
 }) {
+  const [guideDismissed, setGuideDismissed] = useState(() =>
+    readGuideDismissed(data.me.email),
+  );
+  const setGuide = (dismissed: boolean) => {
+    writeGuideDismissed(data.me.email, dismissed);
+    setGuideDismissed(dismissed);
+  };
   const open = data.findings.filter((f) => f.status === "open"),
     lowConfidence = open.filter((f) => f.confidence < 85);
+  const activeReview = data.agreements.filter((a) =>
+      ["in_review", "ready_for_review", "manual_review_required"].includes(
+        a.status,
+      ),
+    ),
+    activeUnits = new Set(activeReview.map((a) => a.businessUnit)).size;
+  // Soonest needed-by date first; agreements without a valid date go last.
+  // Ties go to the agreement with the lowest-confidence open finding.
+  const dueTime = (a: Agreement) =>
+      parseDueDate(a.neededBy)?.getTime() ?? Infinity,
+    lowestConfidence = (a: Agreement) =>
+      Math.min(
+        100,
+        ...open.filter((f) => f.agreementId === a.id).map((f) => f.confidence),
+      );
+  const priority = data.agreements
+    .filter(
+      (a) =>
+        !a.status.startsWith("cleared") &&
+        !["approved", "review_complete"].includes(a.status),
+    )
+    .sort(
+      (a, b) =>
+        dueTime(a) - dueTime(b) || lowestConfidence(a) - lowestConfidence(b),
+    );
+  const steps = gettingStarted[data.me.role];
   return (
     <>
-      <div className="notice">
-        <ShieldCheck size={21} />
-        <div>
-          <strong>Human review remains the decision point.</strong>
-          <span>
-            Every automated finding includes its source and confidence. Manual
-            classification remains available if analysis fails.
-          </span>
-        </div>
-      </div>
+      {!guideDismissed && (
+        <Card className="getting-started">
+          <CardHeader className="card-head">
+            <div>
+              <CardTitle>Getting started as {roleLabels[data.me.role]}</CardTitle>
+              <p>Three steps to your first review.</p>
+            </div>
+            <Button variant="ghost" onClick={() => setGuide(true)}>
+              Hide guide
+            </Button>
+          </CardHeader>
+          <CardContent>
+            <ol className="guide-steps">
+              {steps.map((step, index) => (
+                <li key={step.title}>
+                  <span className="guide-number">{index + 1}</span>
+                  <div>
+                    <strong>{step.title}</strong>
+                    <p>{step.detail}</p>
+                    {step.view && step.action && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => onNavigate(step.view!)}
+                      >
+                        {step.action} <ChevronRight size={14} />
+                      </Button>
+                    )}
+                  </div>
+                </li>
+              ))}
+            </ol>
+          </CardContent>
+        </Card>
+      )}
       <section className="kpis">
         <Kpi
           label="In active review"
-          value={
-            data.agreements.filter((a) =>
-              [
-                "in_review",
-                "ready_for_review",
-                "manual_review_required",
-              ].includes(a.status),
-            ).length
+          value={activeReview.length}
+          note={
+            activeUnits
+              ? `Across ${activeUnits} business ${activeUnits === 1 ? "unit" : "units"}`
+              : "Nothing in progress"
           }
-          note="Across 3 business units"
           icon={Clock3}
         />
         <Kpi
@@ -548,19 +799,29 @@ function Overview({
         <CardHeader className="card-head">
           <div>
             <CardTitle>Priority queue</CardTitle>
-            <p>Ordered by needed-by date and confidence</p>
+            <p>Soonest needed-by date first, then lowest confidence</p>
           </div>
           <Button variant="outline" onClick={onQueue}>
             Open queue <ChevronRight size={15} />
           </Button>
         </CardHeader>
         <CardContent className="rows">
-          {data.agreements
-            .filter(
-              (a) =>
-                !a.status.startsWith("cleared") &&
-                !["approved", "review_complete"].includes(a.status),
-            )
+          {priority.length === 0 && (
+            <div className="overview-empty" role="status">
+              <CheckCircle2 size={22} />
+              <div>
+                <strong>Nothing needs review right now.</strong>
+                <span>
+                  New agreements appear here as soon as they are submitted,
+                  soonest due first.
+                </span>
+              </div>
+              <Button onClick={() => onNavigate("intake")}>
+                <Plus size={16} /> Submit an agreement
+              </Button>
+            </div>
+          )}
+          {priority
             .slice(0, 4)
             .map((a) => {
               const fs = data.findings.filter(
@@ -576,7 +837,9 @@ function Overview({
                     <FileText size={18} />
                   </div>
                   <div className="row-main">
-                    <strong>{a.vendor}</strong>
+                    <strong>
+                      {a.vendor} <DueChip neededBy={a.neededBy} />
+                    </strong>
                     <span>
                       {a.id} · {a.agreementType} · {a.businessUnit}
                     </span>
@@ -587,7 +850,7 @@ function Overview({
                     </Badge>
                     <span className="due">
                       Due{" "}
-                      {new Date(a.neededBy).toLocaleDateString(undefined, {
+                      {formatDueDate(a.neededBy, {
                         month: "short",
                         day: "numeric",
                       })}
@@ -600,7 +863,7 @@ function Overview({
                         : "risk-neutral"
                     }
                   >
-                    {fs.length} flags
+                    {fs.length} {fs.length === 1 ? "flag" : "flags"}
                   </strong>
                   <ChevronRight size={17} />
                 </button>
@@ -608,6 +871,75 @@ function Overview({
             })}
         </CardContent>
       </Card>
+      <Card className="overview-help">
+        <CardHeader>
+          <CardTitle>How to read this page</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <details>
+            <summary>What a flag and its confidence mean</summary>
+            <div className="help-body">
+              <p>
+                A <strong>flag</strong> means Calder found language that looks
+                like a named provision, such as a liability cap or an
+                auto-renewal clause, and quotes the text it found. It is not a
+                risk rating or legal advice. If a provision isn't flagged, that
+                doesn't prove the contract lacks it.
+              </p>
+              <ul>
+                <li>
+                  <strong>90</strong> — the AI and the keyword rules both found
+                  this provision.
+                </li>
+                <li>
+                  <strong>75</strong> — only the AI found it.
+                </li>
+                <li>
+                  <strong>64–96</strong> — found by keyword rules alone; higher
+                  means more matching phrases.
+                </li>
+                <li>
+                  <strong>Manual findings</strong> use the confidence the
+                  reviewer entered.
+                </li>
+                <li>
+                  <strong>Below 85</strong> is counted as low confidence and
+                  deserves a closer look.
+                </li>
+              </ul>
+            </div>
+          </details>
+          <details>
+            <summary>What each status means</summary>
+            <div className="help-body status-guide">
+              {statusGuide.map((row) => (
+                <div key={row.status}>
+                  <Badge variant="outline" className={tone(row.status)}>
+                    {label(row.status)}
+                  </Badge>
+                  <span>{row.meaning}</span>
+                  <small>Next: {row.next}</small>
+                </div>
+              ))}
+            </div>
+          </details>
+        </CardContent>
+      </Card>
+      <div className="notice notice-footer">
+        <ShieldCheck size={21} />
+        <div>
+          <strong>Human review remains the decision point.</strong>
+          <span>
+            Every automated finding includes its source and confidence. Manual
+            classification remains available if analysis fails.
+          </span>
+        </div>
+        {guideDismissed && (
+          <Button variant="outline" size="sm" onClick={() => setGuide(false)}>
+            Show getting-started guide
+          </Button>
+        )}
+      </div>
     </>
   );
 }
@@ -690,12 +1022,14 @@ function Intake({
       filename: uploadResult.filename,
       storageKey: uploadResult.key,
     };
+    rememberAgreementText(uploadResult.key, extractedText);
     const agreementId = `agr-${crypto.randomUUID().slice(0, 8)}`;
     if (
       await submit({
         action: "create_agreement",
         id: agreementId,
-        status: "ready_for_review",
+        status:
+          analysisMode === "manual" ? "manual_review_required" : "ready_for_review",
         ...next,
       })
     ) {
@@ -1025,7 +1359,7 @@ function Queue({
                 </small>
                 <small>
                   Needed{" "}
-                  {new Date(a.neededBy).toLocaleDateString(undefined, {
+                  {formatDueDate(a.neededBy, {
                     month: "short",
                     day: "numeric",
                   })}
@@ -1108,6 +1442,7 @@ function Queue({
                   <Button
                     onClick={() => {
                       setActive(f);
+                      setDecision("accepted");
                       setReason("");
                     }}
                   >
@@ -1132,7 +1467,7 @@ function Queue({
           )}
         </div>
         {!completedIds.has(current.id) && (
-          <ManualFinding agreementId={current.id} submit={decide} />
+          <ManualFinding key={current.id} agreement={current} submit={decide} />
         )}
       </section>
       ) : (
@@ -1170,7 +1505,10 @@ function Queue({
               <SelectContent>
                 <SelectItem value="accepted">Accept finding</SelectItem>
                 <SelectItem value="dismissed">Dismiss finding</SelectItem>
-                <SelectItem value="escalated">Escalate to Approver</SelectItem>
+                {/* An escalation can only be resolved, not escalated again. */}
+                {active?.status !== "escalated" && (
+                  <SelectItem value="escalated">Escalate to Approver</SelectItem>
+                )}
               </SelectContent>
             </Select>
             <Label>Required reason</Label>
@@ -1210,21 +1548,77 @@ function Queue({
   );
 }
 function ManualFinding({
-  agreementId,
+  agreement,
   submit,
 }: {
-  agreementId: string;
+  agreement: Agreement;
   submit: (b: Record<string, unknown>) => Promise<boolean>;
 }) {
+  const categories = entriesForAgreementType(agreement.agreementType);
+  const provisions = (categories.length ? categories : taxonomy).map(
+    (entry) => entry.calderProvision,
+  );
+  const blank = {
+    provision: provisions[0] ?? "",
+    confidence: "100",
+    sourceText: "",
+    reason: "",
+  };
   const [open, setOpen] = useState(false),
-    [f, setF] = useState({
-      provision: "Cap on Liability",
-      confidence: 100,
-      sourceText: "",
-      reason: "",
-    });
+    [f, setF] = useState(blank),
+    [checking, setChecking] = useState(false),
+    [problem, setProblem] = useState("");
+  const confidence = Number(f.confidence);
+  const confidenceValid =
+    f.confidence.trim() !== "" &&
+    Number.isFinite(confidence) &&
+    confidence >= 0 &&
+    confidence <= 100;
+  const ready =
+    provisions.includes(f.provision) &&
+    f.sourceText.trim() !== "" &&
+    confidenceValid;
+  const add = async () => {
+    setChecking(true);
+    setProblem("");
+    try {
+      const text = await loadAgreementText(agreement.storageKey);
+      if (text && !sourceTextInDocument(f.sourceText, text)) {
+        setProblem(
+          "This text was not found in the agreement. Paste it exactly as it appears in the document.",
+        );
+        return;
+      }
+      if (
+        await submit({
+          action: "add_manual_finding",
+          agreementId: agreement.id,
+          provision: f.provision,
+          confidence,
+          sourceText: f.sourceText.trim(),
+          reason: f.reason,
+          sourceVerified: Boolean(text),
+        })
+      ) {
+        setOpen(false);
+        setF(blank);
+        if (!text)
+          toast.warning(
+            "Finding added, but the agreement file was unavailable, so the source text could not be verified.",
+          );
+      }
+    } finally {
+      setChecking(false);
+    }
+  };
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next);
+        setProblem("");
+      }}
+    >
       <DialogTrigger asChild>
         <Button variant="outline">
           <Plus size={16} /> Add manual finding
@@ -1235,47 +1629,61 @@ function ManualFinding({
           <DialogTitle>Add source-linked finding</DialogTitle>
           <DialogDescription>
             Use this path when automation is unavailable or needs correction.
+            The source text is checked against the stored agreement.
           </DialogDescription>
         </DialogHeader>
         <div className="decision-form">
           <Label>Provision</Label>
-          <Input
+          <Select
             value={f.provision}
-            onChange={(e) => setF({ ...f, provision: e.target.value })}
-          />
+            onValueChange={(provision) => setF({ ...f, provision })}
+          >
+            <SelectTrigger aria-label="Provision">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {provisions.map((provision) => (
+                <SelectItem key={provision} value={provision}>
+                  {provision}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <Label>Confidence (0-100)</Label>
           <Input
             type="number"
             min="0"
             max="100"
             value={f.confidence}
-            onChange={(e) =>
-              setF({ ...f, confidence: Number(e.target.value) })
-            }
+            aria-invalid={!confidenceValid}
+            onChange={(e) => setF({ ...f, confidence: e.target.value })}
           />
+          {!confidenceValid && (
+            <p className="field-error" role="alert">
+              Enter a number from 0 to 100.
+            </p>
+          )}
           <Label>Exact source text</Label>
           <Textarea
             value={f.sourceText}
-            onChange={(e) => setF({ ...f, sourceText: e.target.value })}
+            aria-invalid={!!problem}
+            onChange={(e) => {
+              setF({ ...f, sourceText: e.target.value });
+              setProblem("");
+            }}
           />
+          {problem && (
+            <p className="field-error" role="alert">
+              {problem}
+            </p>
+          )}
           <Label>Reviewer note (optional)</Label>
           <Textarea
             value={f.reason}
             onChange={(e) => setF({ ...f, reason: e.target.value })}
           />
-          <Button
-            onClick={async () => {
-              if (
-                await submit({
-                  action: "add_manual_finding",
-                  agreementId,
-                  ...f,
-                })
-              )
-                setOpen(false);
-            }}
-          >
-            Add finding
+          <Button disabled={!ready || checking} onClick={add}>
+            {checking ? "Checking source text…" : "Add finding"}
           </Button>
         </div>
       </DialogContent>
@@ -1378,7 +1786,7 @@ function Agreements({
               {a.agreementType}
               <small>{a.businessUnit}</small>
             </span>
-            <span>{new Date(a.neededBy).toLocaleDateString()}</span>
+            <span>{formatDueDate(a.neededBy)}</span>
             <Badge variant="outline" className={tone(a.status)}>
               {label(a.status)}
             </Badge>
@@ -1490,7 +1898,7 @@ function Reports({ data }: { data: Data }) {
   const categories = [...new Set(data.findings.map((f) => f.provision))];
   const overdue = data.agreements.filter(
     (a) =>
-      new Date(a.neededBy) < new Date() &&
+      (daysUntilDue(a.neededBy) ?? 0) < 0 &&
       !a.status.startsWith("cleared") &&
       !["approved", "review_complete"].includes(a.status),
   );

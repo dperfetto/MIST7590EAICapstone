@@ -267,6 +267,10 @@ body {
   margin-bottom: 20px;
   color: #174552;
 }
+.notice-footer {
+  margin: 20px 0 0;
+  flex-wrap: wrap;
+}
 .notice div {
   flex: 1;
 }
@@ -383,6 +387,121 @@ body {
   font-size: 0.68rem;
   color: #7d8896;
   margin-top: 3px;
+}
+.due-chip {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 7px;
+  border: 1px solid;
+  border-radius: 999px;
+  font-size: 0.66rem;
+  font-style: normal;
+  font-weight: 600;
+  vertical-align: middle;
+}
+.getting-started {
+  margin-bottom: 22px;
+}
+.guide-steps {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.guide-steps li {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+.guide-steps strong {
+  display: block;
+  font-size: 0.9rem;
+}
+.guide-steps p {
+  margin: 4px 0 10px;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: #5c6a7b;
+}
+.guide-number {
+  flex: none;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: #e7f2f3;
+  color: #174552;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+.overview-empty {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px 2px 4px;
+  border-top: 1px solid #edf0f4;
+  color: #526174;
+}
+.overview-empty > svg {
+  flex: none;
+  color: #29916c;
+}
+.overview-empty > div {
+  flex: 1;
+}
+.overview-empty strong,
+.overview-empty span {
+  display: block;
+}
+.overview-empty strong {
+  color: #17243a;
+  font-size: 0.91rem;
+}
+.overview-empty span {
+  font-size: 0.8rem;
+  margin-top: 3px;
+}
+.overview-help {
+  margin-top: 22px;
+}
+.overview-help details {
+  border-top: 1px solid #edf0f4;
+  padding: 12px 2px;
+}
+.overview-help summary {
+  cursor: pointer;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #17243a;
+}
+.help-body {
+  margin-top: 10px;
+  font-size: 0.82rem;
+  line-height: 1.55;
+  color: #526174;
+}
+.help-body ul {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  list-style: disc;
+}
+.status-guide {
+  display: grid;
+  gap: 10px;
+}
+.status-guide > div {
+  display: grid;
+  grid-template-columns: 190px 1fr auto;
+  gap: 12px;
+  align-items: center;
+}
+.status-guide small {
+  color: #7d8896;
+  font-size: 0.72rem;
+  white-space: nowrap;
 }
 .risk-high {
   color: #b42318;
@@ -1171,6 +1290,19 @@ body {
   }
   .agreement-row {
     grid-template-columns: 34px 1fr 18px;
+  }
+  .guide-steps {
+    grid-template-columns: 1fr;
+  }
+  .overview-empty {
+    flex-wrap: wrap;
+  }
+  .status-guide > div {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+  .status-guide > div [data-slot="badge"] {
+    justify-self: start;
   }
   .agreement-row > div:nth-child(3),
   .agreement-row > strong {

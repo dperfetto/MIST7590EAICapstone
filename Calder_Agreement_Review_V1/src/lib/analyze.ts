@@ -105,6 +105,41 @@ export async function extractDocumentText(file: File) {
   }
 }
 
+export function sourceTextInDocument(sourceText: string, documentText: string) {
+  const quote = clean(sourceText).toLowerCase();
+  return quote.length > 0 && clean(documentText).toLowerCase().includes(quote);
+}
+
+// Extracted text is not stored, so reload it from the uploaded file when a
+// reviewer needs to verify a quote. Text extracted at intake is cached for the
+// session; local-demo uploads keep no file, so only that cache can help there.
+const agreementTextCache = new Map<string, string>();
+
+export function rememberAgreementText(storageKey: string, text: string) {
+  agreementTextCache.set(storageKey, text);
+}
+
+export async function loadAgreementText(storageKey?: string | null) {
+  if (!storageKey) return null;
+  const cached = agreementTextCache.get(storageKey);
+  if (cached) return cached;
+  if (!supabase || storageKey.startsWith("local-demo/")) return null;
+  try {
+    const { data, error } = await supabase.storage
+      .from("agreements")
+      .download(storageKey);
+    if (error || !data) return null;
+    const name = storageKey.split("/").pop() || "agreement";
+    const text = await extractDocumentText(
+      new File([data], name, { type: data.type }),
+    );
+    agreementTextCache.set(storageKey, text);
+    return text;
+  } catch {
+    return null;
+  }
+}
+
 function presenceFinding(
   provision: string,
   sourceText: string,
