@@ -1,6 +1,7 @@
 import * as pdfjs from "pdfjs-dist/legacy/build/pdf.mjs";
 import pdfWorker from "pdfjs-dist/legacy/build/pdf.worker.min.mjs?url";
 import { supabase } from "./data";
+import { readLocalFile } from "./agreementFiles";
 import {
   entriesForAgreementType,
   findCandidateClause,
@@ -112,26 +113,55 @@ export function sourceTextInDocument(sourceText: string, documentText: string) {
 
 // Extracted text is not stored, so reload it from the uploaded file when a
 // reviewer needs to verify a quote. Text extracted at intake is cached for the
-// session; local-demo uploads keep no file, so only that cache can help there.
+// session; after that it is re-extracted from the file loadAgreementFile finds.
 const agreementTextCache = new Map<string, string>();
 
 export function rememberAgreementText(storageKey: string, text: string) {
   agreementTextCache.set(storageKey, text);
 }
 
-export async function loadAgreementText(storageKey?: string | null) {
+// The original uploaded file, so reviewers can view or download it from the
+// queue. Demo uploads live in this browser (agreementFiles.ts); hosted
+// uploads come from the private Supabase Storage bucket, which RLS limits to
+// the submitter and the review team.
+const agreementFileCache = new Map<string, Blob>();
+
+export function rememberAgreementFile(storageKey: string, file: Blob) {
+  agreementFileCache.set(storageKey, file);
+}
+
+export async function loadAgreementFile(storageKey?: string | null) {
   if (!storageKey) return null;
-  const cached = agreementTextCache.get(storageKey);
+  const cached = agreementFileCache.get(storageKey);
   if (cached) return cached;
-  if (!supabase || storageKey.startsWith("local-demo/")) return null;
   try {
+    if (storageKey.startsWith("local-demo/")) {
+      const local = await readLocalFile(storageKey);
+      if (local) agreementFileCache.set(storageKey, local);
+      return local;
+    }
+    if (!supabase) return null;
     const { data, error } = await supabase.storage
       .from("agreements")
       .download(storageKey);
     if (error || !data) return null;
+    agreementFileCache.set(storageKey, data);
+    return data;
+  } catch {
+    return null;
+  }
+}
+
+export async function loadAgreementText(storageKey?: string | null) {
+  if (!storageKey) return null;
+  const cached = agreementTextCache.get(storageKey);
+  if (cached) return cached;
+  const file = await loadAgreementFile(storageKey);
+  if (!file) return null;
+  try {
     const name = storageKey.split("/").pop() || "agreement";
     const text = await extractDocumentText(
-      new File([data], name, { type: data.type }),
+      new File([file], name, { type: file.type }),
     );
     agreementTextCache.set(storageKey, text);
     return text;
