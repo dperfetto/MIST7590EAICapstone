@@ -43,18 +43,74 @@ The Requester selects one of Calder's procurement intake values; the application
 
 Every new account starts as a Submitter. Only an Administrator can assign elevated roles. Supabase Auth hashes passwords and issues expiring sessions; database row-level security and stored functions enforce authorization on the server. Hiding navigation is only a usability layer, not the security boundary.
 
-## Test locally in demo mode
+## Run locally
 
-Prerequisites: Node.js 22 and npm.
+Prerequisites: Node.js 22 and npm. From the repository root:
 
 ```bash
-cd calder-portable
+cd Calder_Agreement_Review_V1
 npm install
-npm run check
+npm run check   # optional: lint, tests, and production build
+```
+
+The app chooses its mode at startup from two environment variables:
+
+| Mode | When it is used | Login | Where data lives |
+| --- | --- | --- | --- |
+| **Demo** | `VITE_SUPABASE_URL` or `VITE_SUPABASE_ANON_KEY` is missing or empty | No real accounts | Seeded sample data in your browser's localStorage |
+| **Supabase** | Both variables are set (normally in `.env.local`) | Supabase Auth accounts | Your Supabase database and private storage |
+
+### Option A: Demo mode (no setup)
+
+Use this to try the app quickly. Nothing leaves your browser.
+
+If there is **no** `.env.local` file:
+
+```bash
 npm run dev
 ```
 
-Open `http://localhost:5173`. With no `.env.local`, the application uses seeded browser-local demo data. To test the fallback paths:
+If you **already have** a `.env.local` with Supabase keys, blank them out for this run (the file is not changed):
+
+```bash
+VITE_SUPABASE_URL= VITE_SUPABASE_ANON_KEY= npm run dev
+```
+
+Open `http://localhost:5173`. Demo data is saved in browser localStorage, so it survives a page reload. To reset it, clear the site data for `localhost:5173` in your browser's developer tools.
+
+### Option B: Connected to Supabase
+
+Use this to test real sign-up/sign-in, role-based access, row-level security, and shared data.
+
+1. Create a Supabase project.
+2. In **SQL Editor**, run the complete `supabase/schema.sql`. Existing v1.5 deployments must rerun it to migrate shorthand agreement types and allow the new `present` finding type while retaining historical findings.
+3. Keep Email authentication enabled. Email verification, password reset, MFA, and account lockout are not required by the project.
+4. In **Project Settings → API**, copy the Project URL and the publishable (anon) key.
+5. Create `Calder_Agreement_Review_V1/.env.local` containing:
+
+   ```env
+   VITE_SUPABASE_URL=https://YOUR_PROJECT.supabase.co
+   VITE_SUPABASE_ANON_KEY=YOUR_PUBLISHABLE_OR_ANON_KEY
+   ```
+
+6. Start the app (restart it if it was already running, since Vite reads `.env.local` only at startup):
+
+   ```bash
+   npm run dev
+   ```
+
+7. Open `http://localhost:5173` and create an account. Every new account starts as a Submitter. To test the other roles, make your first account an Administrator by running this once in **SQL Editor**, then assign roles to other accounts from inside the app:
+
+   ```sql
+   update public.profiles set role = 'administrator'
+   where id = (select id from auth.users where email = 'you@example.com');
+   ```
+
+Never put a Supabase secret/service-role key in this frontend project. `.env.local` is for your machine only; do not commit it.
+
+### Test the fallback paths
+
+These steps work in either mode:
 
 1. Open **New intake**, choose an agreement type, and upload a searchable PDF/TXT.
 2. Choose **Deterministic only** and confirm source-linked presence findings are created.
@@ -75,26 +131,11 @@ The command reports file size, page count for PDFs, searchable character count,
 an extraction preview, and an accepted/rejected decision. The supplied
 `Contract 1.pdf` was verified at 146 pages and 225,021 searchable characters.
 
-## Connect Supabase
-
-1. Create a Supabase project.
-2. In **SQL Editor**, run the complete `supabase/schema.sql`. Existing v1.5 deployments must rerun it to migrate shorthand agreement types and allow the new `present` finding type while retaining historical findings.
-3. Keep Email authentication enabled. Email verification, password reset, MFA, and account lockout are not required by the project.
-4. Copy `.env.example` to `.env.local`.
-5. Add your Project URL and browser-safe publishable/anon key:
-
-```env
-VITE_SUPABASE_URL=https://YOUR_PROJECT.supabase.co
-VITE_SUPABASE_ANON_KEY=YOUR_PUBLISHABLE_OR_ANON_KEY
-```
-
-Never put a Supabase secret/service-role key in this frontend project.
-
 ## Deploy on the zero-dollar stack
 
-1. Push exactly one application folder named `calder-portable` to GitHub.
+1. Push exactly one application folder named `Calder_Agreement_Review_V1` to GitHub.
 2. Import the repository into Vercel.
-3. If the repository contains the app as a subfolder, set **Root Directory** to `calder-portable`; otherwise leave it blank.
+3. If the repository contains the app as a subfolder, set **Root Directory** to `Calder_Agreement_Review_V1`; otherwise leave it blank.
 4. Use Framework **Vite**, Build Command `npm run build`, and Output Directory `dist`.
 5. Add `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `SUPABASE_URL`, and `SUPABASE_ANON_KEY`.
 6. Optionally add `OPENAI_API_KEY` and `OPENAI_MODEL`.
