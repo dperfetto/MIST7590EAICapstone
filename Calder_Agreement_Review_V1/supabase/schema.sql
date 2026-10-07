@@ -75,6 +75,12 @@ update public.agreements set agreement_type='Data Processing Addendum' where agr
 alter table public.agreements add constraint agreements_agreement_type_check
   check (agreement_type in ('Software Subscription','Professional Services','Licensing','Logistics and Freight','Data Processing Addendum','Mutual NDA','Other'));
 
+-- The analysis path chosen at intake decides how the review queue presents
+-- the document: manual shows the full document, automatic/deterministic show a
+-- click-to-download preview. Older rows stay null and get the preview.
+alter table public.agreements add column if not exists analysis_path text
+  check (analysis_path is null or analysis_path in ('automatic','deterministic','manual'));
+
 create table if not exists public.findings (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,

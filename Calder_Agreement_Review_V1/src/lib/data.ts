@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import { saveLocalFile } from "./agreementFiles";
 import { taxonomy } from "./candidateRetrieval";
 
 export type UserRole = "submitter" | "reviewer" | "approver" | "administrator";
@@ -11,6 +12,11 @@ export const agreementTypes = [
   "Mutual NDA",
   "Other",
 ] as const;
+export type AnalysisPath = "automatic" | "deterministic" | "manual";
+export const normalizeAnalysisPath = (value: unknown): AnalysisPath | null =>
+  value === "automatic" || value === "deterministic" || value === "manual"
+    ? value
+    : null;
 export const roleLabels: Record<UserRole, string> = {
   submitter: "Submitter",
   reviewer: "Reviewer",
@@ -30,6 +36,11 @@ export type Agreement = {
   neededBy: string;
   filename: string;
   storageKey?: string | null;
+  /** Analysis path the Requester chose at intake. Decides how the review
+   *  queue shows the document: manual = full scrollable document,
+   *  automatic/deterministic = small click-to-download preview.
+   *  Null for agreements created before this was recorded. */
+  analysisPath?: AnalysisPath | null;
   status: string;
   playbookVersion: string;
   createdAt: string;
@@ -522,6 +533,7 @@ const camelAgreement = (r: any): Agreement => ({
   neededBy: r.needed_by,
   filename: r.filename,
   storageKey: r.storage_key,
+  analysisPath: normalizeAnalysisPath(r.analysis_path),
   status: r.status,
   playbookVersion: r.playbook_version,
   createdAt: r.created_at,
@@ -672,6 +684,7 @@ export async function performAction(body: Record<string, unknown>) {
         neededBy: String(body.neededBy),
         filename: String(body.filename || "Manual intake"),
         storageKey: String(body.storageKey || ""),
+        analysisPath: normalizeAnalysisPath(body.analysisPath),
         status: String(body.status || "manual_review_required"),
         playbookVersion: `${body.agreementType} v1`,
         createdAt: now(),
@@ -830,6 +843,7 @@ export async function performAction(body: Record<string, unknown>) {
         needed_by: body.neededBy,
         filename: body.filename || "Manual intake",
         storage_key: body.storageKey || null,
+        analysis_path: normalizeAnalysisPath(body.analysisPath),
         status: body.status || "manual_review_required",
         playbook_version: `${body.agreementType} v1`,
       });
@@ -983,11 +997,12 @@ export async function uploadPdf(file: File) {
     /\.(pdf|txt)$/i.test(file.name);
   if (!supported || file.size > 10 * 1024 * 1024)
     throw new Error("Upload a PDF or TXT file no larger than 10 MB.");
-  if (!supabase)
-    return {
-      filename: file.name,
-      key: `local-demo/${Date.now()}-${file.name}`,
-    };
+  if (!supabase) {
+    const key = `local-demo/${Date.now()}-${file.name}`;
+    // Keep the file in this browser so the review queue can show it.
+    await saveLocalFile(key, file);
+    return { filename: file.name, key };
+  }
   const user = await currentUser();
   const safe = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
   const path = `${user.id}/${Date.now()}-${safe}`;

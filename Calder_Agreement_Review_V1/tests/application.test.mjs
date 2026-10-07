@@ -7,7 +7,7 @@ const [
   workspace, data, analyzer, retrieval, aiEndpoint, styles, shell, main,
   schema, app, viteConfig, mappingCsv, evaluator, pdfEvaluator, changeLog,
   decisionLog, stretchBacklog, hostingComparison, classifierApp,
-  ingestionVerifier,
+  ingestionVerifier, agreementFiles, documentPreview,
 ] = await Promise.all([
   read("../src/Workspace.tsx"), read("../src/lib/data.ts"),
   read("../src/lib/analyze.ts"), read("../src/lib/candidateRetrieval.ts"),
@@ -22,6 +22,7 @@ const [
   read("../docs/STRETCH_BACKLOG.md"), read("../docs/HOSTING_COMPARISON.md"),
   read("../classifier-service/app.py"),
   read("../scripts/verify_ingestion.mjs"),
+  read("../src/lib/agreementFiles.ts"), read("../src/lib/documentPreview.ts"),
 ]);
 const taxonomy = JSON.parse(await read("../src/data/cuad-calder-taxonomy.json"));
 const metrics = JSON.parse(await read("../evaluation/results/metrics.json"));
@@ -342,4 +343,23 @@ test("manual findings keep a zero confidence and verify their source text", () =
   assert.match(analyzer, /\.from\("agreements"\)\s*\.download\(storageKey\)/);
   assert.match(workspace, /text && !sourceTextInDocument\(f\.sourceText, text\)/);
   assert.match(workspace, /<ManualFinding key=\{current\.id\} agreement=\{current\}/);
+});
+
+test("reviewers can see the submitted document in the review queue", () => {
+  // The chosen analysis path is stored with the agreement in both modes.
+  assert.match(workspace, /analysisPath: analysisMode/);
+  assert.match(data, /analysisPath: normalizeAnalysisPath\(body\.analysisPath\)/);
+  assert.match(data, /analysis_path: normalizeAnalysisPath\(body\.analysisPath\)/);
+  assert.match(data, /analysisPath: normalizeAnalysisPath\(r\.analysis_path\)/);
+  assert.match(schema, /add column if not exists analysis_path text/);
+  // Demo uploads keep the file so the queue can show it.
+  assert.match(data, /await saveLocalFile\(key, file\)/);
+  assert.match(agreementFiles, /indexedDB\.open/);
+  assert.match(analyzer, /export async function loadAgreementFile/);
+  // Manual path shows every page; other paths show a click-to-download preview.
+  assert.match(workspace, /<AgreementDocument key=\{`doc-\$\{current\.id\}`\} agreement=\{current\}/);
+  assert.match(workspace, /const fullView = agreement\.analysisPath === "manual"/);
+  assert.match(workspace, /renderPdfPages\(file, container/);
+  assert.match(workspace, /renderPdfThumbnail\(file\)/);
+  assert.match(documentPreview, /link\.download = filename/);
 });
