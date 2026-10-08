@@ -87,6 +87,23 @@ test("sections are analyzed with bounded concurrency and results keep their orde
   assert.equal(peak, 2);
 });
 
+test("no further sections are sent after one fails", async () => {
+  const started = [];
+  await assert.rejects(
+    mapWithConcurrency(Array.from({ length: 12 }, (_, i) => i), 3, async (i) => {
+      started.push(i);
+      await new Promise((resolve) => setTimeout(resolve, i === 1 ? 1 : 20));
+      if (i === 1) throw new Error("AI analysis is unavailable.");
+      return i;
+    }),
+    /unavailable/,
+  );
+  // Let the sections already in flight settle before counting.
+  await new Promise((resolve) => setTimeout(resolve, 100));
+  // Sections 0-2 were in flight when section 1 failed; nothing else started.
+  assert.deepEqual(started, [0, 1, 2]);
+});
+
 test("a failed section fails the whole AI run", async () => {
   await assert.rejects(
     mapWithConcurrency([1, 2, 3], 3, async (n) => {

@@ -66,7 +66,9 @@ Used when the mode is **Automatic**.
 - Merges the returned findings, dropping the same category and span returned from two
   overlapping sections.
 - If any section fails, the whole AI run is treated as unavailable and the deterministic path
-  runs on the full text, so a partial AI result never silently misses provisions. Agreements
+  runs on the full text, so a partial AI result never silently misses provisions. No further
+  sections are sent after a failure; at most the two other sections already in progress finish.
+  A single agreement therefore makes at most 12 AI requests. Agreements
   that need more than 12 sections (about 1.4 million characters) skip the AI path and go to
   deterministic analysis with the notice *"The agreement is too long for AI analysis, so
   deterministic analysis ran on the full text."*

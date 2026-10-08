@@ -60,7 +60,9 @@ export function mergeChunkFindings<T extends SpanFinding>(results: T[][]) {
 }
 
 // Run `task` over every item with at most `limit` in flight, preserving order.
-// Rejects as soon as any task fails.
+// Rejects as soon as any task fails, and starts no further tasks after that,
+// so a failed AI run doesn't keep paying for sections whose results are
+// discarded. Tasks already in flight are left to finish.
 export async function mapWithConcurrency<T, R>(
   items: T[],
   limit: number,
@@ -68,10 +70,16 @@ export async function mapWithConcurrency<T, R>(
 ) {
   const results = new Array<R>(items.length);
   let next = 0;
+  let failed = false;
   const worker = async () => {
-    while (next < items.length) {
+    while (!failed && next < items.length) {
       const index = next++;
-      results[index] = await task(items[index], index);
+      try {
+        results[index] = await task(items[index], index);
+      } catch (error) {
+        failed = true;
+        throw error;
+      }
     }
   };
   await Promise.all(
