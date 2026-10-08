@@ -20,6 +20,8 @@ const allowedCategories = new Set([
   "Warranty Duration",
 ]);
 
+const MAX_SECTION_LENGTH = 120_000;
+
 async function runCuadClassifier({ text, agreementType, categories }) {
   const baseUrl = process.env.CUAD_CLASSIFIER_URL?.replace(/\/$/, "");
   if (!baseUrl) return null;
@@ -148,6 +150,12 @@ export default async function handler(req, res) {
     return res
       .status(400)
       .json({ error: "Valid agreement text and type are required" });
+  // The browser sends long agreements in sections of at most 120,000
+  // characters (src/lib/chunkText.ts); reject anything larger.
+  if (text.length > MAX_SECTION_LENGTH)
+    return res
+      .status(413)
+      .json({ error: "Send long agreements in smaller sections" });
 
   const definitions = playbook
     .filter(

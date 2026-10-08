@@ -57,9 +57,19 @@ Used when the mode is **Automatic**.
 
 **In the browser** (`runAiAnalysis`, `src/lib/analyze.ts`):
 
-- Sends the signed-in user's access token, the first **120,000 characters** of text, the
-  agreement type, and each active category's taxonomy `description` and `exclusions` to
-  `POST /api/analyze`.
+- Splits the text into sections of at most **120,000 characters** (`src/lib/chunkText.ts`).
+  Sections end at a paragraph or sentence break where possible and overlap by 2,000 characters,
+  so a clause on a boundary appears whole in one section. Short agreements are one section.
+- Sends each section, with the signed-in user's access token, the agreement type, and each
+  active category's taxonomy `description` and `exclusions`, to `POST /api/analyze`, three
+  sections at a time.
+- Merges the returned findings, dropping the same category and span returned from two
+  overlapping sections.
+- If any section fails, the whole AI run is treated as unavailable and the deterministic path
+  runs on the full text, so a partial AI result never silently misses provisions. Agreements
+  that need more than 12 sections (about 1.4 million characters) skip the AI path and go to
+  deterministic analysis with the notice *"The agreement is too long for AI analysis, so
+  deterministic analysis ran on the full text."*
 
 **On the server** (`api/analyze.js`):
 
@@ -209,7 +219,10 @@ After each decision, the agreement status is recalculated from its findings
   shown as `manual_review_required` from its findings.
 - **Empty playbook.** With no active rules, the deterministic path checks every category, but
   the AI path sends none and returns no findings (and so does not fall back).
-- **Long contracts.** The AI path only sees the first 120,000 characters.
+- **Long contracts.** The AI path analyzes up to 12 sections of 120,000 characters (about 1.4
+  million characters); longer agreements use deterministic analysis only. Each section is
+  analyzed without the rest of the contract as context, and the server rejects any single
+  request over 120,000 characters.
 - **Deterministic matching is literal.** It ignores word boundaries and negation, so "renew"
   also matches inside "non-renewal".
 - **The AI path is not covered by the CUAD evaluation.** The evaluation harness scores only the

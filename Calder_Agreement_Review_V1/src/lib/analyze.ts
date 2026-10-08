@@ -3,6 +3,12 @@ import pdfWorker from "pdfjs-dist/legacy/build/pdf.worker.min.mjs?url";
 import { supabase } from "./data";
 import { readLocalFile } from "./agreementFiles";
 import {
+  AI_MAX_CHUNKS,
+  mapWithConcurrency,
+  mergeChunkFindings,
+  splitTextForAi,
+} from "./chunkText";
+import {
   entriesForAgreementType,
   findCandidateClause,
   taxonomyGuidance,
@@ -211,40 +217,68 @@ export function runDeterministicAnalysis(
     .filter((finding): finding is AnalysisFinding => finding !== null);
 }
 
+// Sections analyzed at once; keeps long agreements fast without flooding the
+// serverless function or the model provider's rate limits.
+const AI_CONCURRENCY = 3;
+
 async function runAiAnalysis(
   text: string,
   agreementType: string,
   playbook: AnalysisRule[],
-): Promise<AnalysisFinding[]> {
+): Promise<{ findings: AnalysisFinding[]; sections: number }> {
+  const sections = splitTextForAi(text);
+  // A partial AI result would silently miss provisions, so anything the
+  // hosted path cannot cover in full goes to deterministic analysis instead.
+  if (sections.length > AI_MAX_CHUNKS)
+    throw new Error("Agreement is too long for hosted analysis.");
   const token = (await supabase?.auth.getSession())?.data.session?.access_token;
-  const response = await fetch("/api/analyze", {
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      ...(token ? { authorization: `Bearer ${token}` } : {}),
+  const activePlaybook = playbook
+    .filter((rule) => rule.active)
+    .map((rule) => ({
+      provision: rule.provision,
+      ...taxonomyGuidance(rule.provision),
+    }));
+  const sectionFindings = await mapWithConcurrency(
+    sections,
+    AI_CONCURRENCY,
+    async (section) => {
+      const response = await fetch("/api/analyze", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          ...(token ? { authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          text: section,
+          agreementType,
+          playbook: activePlaybook,
+        }),
+      });
+      if (!response.ok) throw new Error("AI analysis is unavailable.");
+      const payload = await response.json();
+      if (!Array.isArray(payload.findings))
+        throw new Error("AI analysis returned an invalid response.");
+      return payload.findings as Partial<AnalysisFinding>[];
     },
-    body: JSON.stringify({
-      text: text.slice(0, 120_000),
-      agreementType,
-      playbook: playbook
-        .filter((rule) => rule.active)
-        .map((rule) => ({
-          provision: rule.provision,
-          ...taxonomyGuidance(rule.provision),
-        })),
-    }),
-  });
-  if (!response.ok) throw new Error("AI analysis is unavailable.");
-  const payload = await response.json();
-  if (!Array.isArray(payload.findings))
-    throw new Error("AI analysis returned an invalid response.");
+  );
   const normalizedText = clean(text).toLowerCase();
   const independentlyDetected = new Set(
     runDeterministicAnalysis(text, agreementType, playbook).map(
       (finding) => finding.provision,
     ),
   );
-  return payload.findings
+  const findings = mergeChunkFindings(
+    sectionFindings.map((list) =>
+      list.filter(
+        (finding): finding is Partial<AnalysisFinding> & {
+          provision: string;
+          sourceText: string;
+        } =>
+          typeof finding.provision === "string" &&
+          typeof finding.sourceText === "string",
+      ),
+    ),
+  )
     .filter(
       (finding: Partial<AnalysisFinding>) =>
         finding.present === true &&
@@ -266,6 +300,7 @@ async function runAiAnalysis(
         analysisMethod: "ai" as const,
       };
     });
+  return { findings, sections: sections.length };
 }
 
 export async function analyzeExtractedText(
@@ -282,19 +317,29 @@ export async function analyzeExtractedText(
     };
   if (mode === "automatic") {
     try {
-      const findings = await runAiAnalysis(text, agreementType, playbook);
+      const { findings, sections } = await runAiAnalysis(
+        text,
+        agreementType,
+        playbook,
+      );
       return {
         method: "ai" as const,
         findings,
         notice:
-          "AI analysis completed; all findings require human verification.",
+          sections > 1
+            ? `AI analysis completed across ${sections} sections of the agreement; all findings require human verification.`
+            : "AI analysis completed; all findings require human verification.",
       };
-    } catch {
+    } catch (error) {
+      const tooLong =
+        error instanceof Error &&
+        error.message === "Agreement is too long for hosted analysis.";
       return {
         method: "deterministic" as const,
         findings: runDeterministicAnalysis(text, agreementType, playbook),
-        notice:
-          "AI was unavailable, so deterministic analysis ran automatically.",
+        notice: tooLong
+          ? "The agreement is too long for AI analysis, so deterministic analysis ran on the full text."
+          : "AI was unavailable, so deterministic analysis ran automatically.",
       };
     }
   }
