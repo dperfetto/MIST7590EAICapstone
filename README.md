@@ -215,6 +215,24 @@ The presence evaluator reports precision, recall, F1, and confusion counts by Ca
 
 The committed benchmark compared 509 matched CUAD PDF/plaintext pairs. Median token recall was 1.00 and every pair met the 0.80 recall floor, so the release's predeclared decision is `continue`.
 
+### AI check set (brief Sections 6.1/6.2)
+
+Scores the **Automatic (AI)** path against CUAD's expert labels on a chosen list of contracts. It runs the app's own pipeline (PDF.js extraction, sectioning, `api/analyze.js`, quote check, 75/90 confidence) with every contract submitted as **Other**, which carries all ten provisions. It needs `OPENAI_API_KEY` in `.env.local` and bills one OpenAI call per section; responses are cached in `evaluation/ai-check-set/cache/` so reruns are free.
+
+```bash
+node --experimental-strip-types evaluation/run_ai_check_set.mjs \
+  --list "/path/to/ContractsForTesting" --out evaluation/ai-check-set
+
+python3 -m pip install openpyxl   # once
+python3 evaluation/build_ai_check_set_report.py \
+  --results evaluation/ai-check-set/results.json \
+  --dataset evaluation/data/CUAD_v1/CUAD_v1.json \
+  --out "Calder AI Check Set.xlsx" \
+  --sql evaluation/ai-check-set/load_results.sql
+```
+
+The Excel file reports, per provision, how often Calder finds what is labeled there and how often its flags are wrong (no overall accuracy, by design), with a sheet of misses and wrong flags for spot-checking. To view a run in the app, paste `load_results.sql` into the Supabase **SQL Editor** and run it; Administrators then see it under **Insights → AI evaluation**. Loading the same run again replaces it.
+
 ## Troubleshooting
 
 - **Safari: "This browser could not extract the PDF text"**: try the same file in Chrome or Edge first. A console error like `Worker task was terminated` is a PDF.js/Safari Web Worker issue, not your file; it can happen on a valid PDF, especially if the tab was backgrounded during upload.

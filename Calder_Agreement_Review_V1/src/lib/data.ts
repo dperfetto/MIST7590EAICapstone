@@ -77,6 +77,36 @@ export type Audit = {
   createdAt: string;
 };
 export type UserProfile = { id: string; name: string; role: UserRole };
+export type EvaluationOutcome =
+  | "found"
+  | "missed"
+  | "wrong_flag"
+  | "correctly_silent";
+export type EvaluationResult = {
+  contract: string;
+  provision: string;
+  expertPresent: boolean;
+  calderFlagged: boolean;
+  outcome: EvaluationOutcome;
+  confidence: number | null;
+  calderQuote: string | null;
+  quoteOverlaps: boolean | null;
+  expertClause: string | null;
+  keywordFlagged: boolean;
+  methodUsed: string;
+};
+export type EvaluationRun = {
+  id: string;
+  label: string;
+  runAt: string;
+  model: string;
+  agreementType: string;
+  contracts: number;
+  aiCalls: number;
+  aiFallbacks: number;
+  notes: string;
+  results: EvaluationResult[];
+};
 export type Data = {
   me: { name: string; email: string; role: UserRole };
   agreements: Agreement[];
@@ -615,6 +645,59 @@ async function currentUser() {
   if (error || !data.user) throw new Error("Please sign in to continue.");
   return data.user;
 }
+// AI evaluation runs (brief Sections 6.1/6.2), loaded into Supabase from
+// evaluation/build_ai_check_set_report.py --sql. Row-level security returns
+// them to Administrators only; demo mode has none.
+export async function getEvaluations(): Promise<EvaluationRun[]> {
+  if (!supabase) return [];
+  const runs = await supabase
+    .from("evaluation_runs")
+    .select("*")
+    .order("run_at", { ascending: false });
+  if (runs.error) throw runs.error;
+  // Supabase caps a request at 1,000 rows by default, so page through.
+  const rows: any[] = [];
+  for (let from = 0; ; from += 1000) {
+    const page = await supabase
+      .from("evaluation_results")
+      .select("*")
+      .order("run_id")
+      .order("contract")
+      .order("provision")
+      .range(from, from + 999);
+    if (page.error) throw page.error;
+    rows.push(...(page.data || []));
+    if ((page.data || []).length < 1000) break;
+  }
+  const results = { data: rows };
+  return (runs.data || []).map((r: any) => ({
+    id: r.id,
+    label: r.label,
+    runAt: r.run_at,
+    model: r.model,
+    agreementType: r.agreement_type,
+    contracts: r.contracts,
+    aiCalls: r.ai_calls,
+    aiFallbacks: r.ai_fallbacks,
+    notes: r.notes,
+    results: (results.data || [])
+      .filter((row: any) => row.run_id === r.id)
+      .map((row: any) => ({
+        contract: row.contract,
+        provision: row.provision,
+        expertPresent: row.expert_present,
+        calderFlagged: row.calder_flagged,
+        outcome: row.outcome,
+        confidence: row.confidence,
+        calderQuote: row.calder_quote,
+        quoteOverlaps: row.quote_overlaps,
+        expertClause: row.expert_clause,
+        keywordFlagged: row.keyword_flagged,
+        methodUsed: row.method_used,
+      })),
+  }));
+}
+
 export async function getWorkspace(): Promise<Data> {
   if (!supabase) return localRead();
   const user = await currentUser();
@@ -1074,6 +1157,16 @@ export function installWorkspaceApi() {
         : input instanceof URL
           ? input.pathname
           : input.url;
+    if (requestUrl.endsWith("/api/evaluations")) {
+      try {
+        return jsonResponse(await getEvaluations());
+      } catch (error) {
+        return jsonResponse(
+          { error: error instanceof Error ? error.message : "Unexpected error" },
+          { status: 500 },
+        );
+      }
+    }
     if (!requestUrl.endsWith("/api/workspace")) return nativeFetch(input, init);
     try {
       const method = (init?.method || "GET").toUpperCase();

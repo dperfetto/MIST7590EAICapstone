@@ -364,3 +364,24 @@ test("reviewers can see the submitted document in the review queue", () => {
   assert.match(workspace, /renderPdfThumbnail\(file\)/);
   assert.match(documentPreview, /link\.download = filename/);
 });
+
+test("AI evaluation results are readable by administrators only and never written by the app", () => {
+  for (const table of ["evaluation_runs", "evaluation_results"]) {
+    assert.match(schema, new RegExp(`alter table public\\.${table} enable row level security`));
+    assert.match(
+      schema,
+      new RegExp(`on public\\.${table} for select to authenticated\\s+using \\(public\\.current_user_role\\(\\)='administrator'\\)`),
+    );
+    assert.doesNotMatch(schema, new RegExp(`on public\\.${table} for (insert|update|delete|all)`));
+  }
+  assert.doesNotMatch(data, /from\("evaluation_(runs|results)"\)\s*\.(insert|update|upsert|delete)/);
+  assert.match(data, /evaluation_results[\s\S]*?\.range\(from, from \+ 999\)/);
+  assert.match(workspace, /\["evaluation", "AI evaluation", FlaskConical\]/);
+  assert.match(workspace, /view === "evaluation" && data\.me\.role === "administrator" && <Evaluation \/>/);
+  for (const role of ["submitter", "reviewer", "approver"])
+    assert.doesNotMatch(
+      workspace.match(new RegExp(`  ${role}: \\[[^\\]]*\\]`))[0],
+      /"evaluation"/,
+    );
+  assert.doesNotMatch(workspace, /overall accuracy[^.]*%/i);
+});
