@@ -238,6 +238,47 @@ drop policy if exists "Review team reads agreement files" on storage.objects;
 create policy "Review team reads agreement files" on storage.objects for select to authenticated
 using (bucket_id='agreements' and public.current_user_role() in ('reviewer','approver','administrator'));
 
+-- AI evaluation results (brief Sections 6.1/6.2). Loaded by pasting the SQL
+-- file that evaluation/build_ai_check_set_report.py writes into the SQL
+-- Editor; the app can only read them, and only Administrators can.
+create table if not exists public.evaluation_runs (
+  id text primary key,
+  label text not null,
+  run_at timestamptz not null,
+  model text not null,
+  agreement_type text not null,
+  contracts integer not null,
+  ai_calls integer not null,
+  ai_fallbacks integer not null,
+  notes text not null default '',
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.evaluation_results (
+  run_id text not null references public.evaluation_runs(id) on delete cascade,
+  contract text not null,
+  provision text not null,
+  expert_present boolean not null,
+  calder_flagged boolean not null,
+  outcome text not null check (outcome in ('found','missed','wrong_flag','correctly_silent')),
+  confidence integer check (confidence is null or confidence between 0 and 100),
+  calder_quote text,
+  quote_overlaps boolean,
+  expert_clause text,
+  keyword_flagged boolean not null,
+  method_used text not null,
+  primary key (run_id, contract, provision)
+);
+
+alter table public.evaluation_runs enable row level security;
+alter table public.evaluation_results enable row level security;
+drop policy if exists "Administrators read evaluation runs" on public.evaluation_runs;
+create policy "Administrators read evaluation runs" on public.evaluation_runs for select to authenticated
+using (public.current_user_role()='administrator');
+drop policy if exists "Administrators read evaluation results" on public.evaluation_results;
+create policy "Administrators read evaluation results" on public.evaluation_results for select to authenticated
+using (public.current_user_role()='administrator');
+
 -- v1.7: provision names match CUAD category names. Existing findings for the
 -- two renamed categories are relabeled. "Assignment / Control" findings are
 -- left as recorded: that category also covered anti-assignment, so they cannot
