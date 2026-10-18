@@ -42,21 +42,21 @@ component that was tuned by hand against public material.
 | Document | Provision | Edit type | Before: expected/detected | After: expected/detected | Result |
 |---|---|---|---|---|---|
 | bonterms-cloud-terms | Cap on Liability | change liability cap | true / **false** | true / **false** | miss (both) |
-| bonterms-cloud-terms | Renewal Notice | shorten notice period | true / **false** | true / **false** | miss (both) |
-| commonpaper-csa | Auto Renewal | remove protection | true / true | false / false | holds |
+| bonterms-cloud-terms | Notice to Terminate Renewal | shorten notice period | true / **false** | true / **false** | miss (both) |
+| commonpaper-csa | Renewal Term | remove protection | true / true | false / false | holds |
 | commonpaper-software-license | Exclusivity | insert unusual clause | false / **true** | true / true | miss (before) |
 | bonterms-mutual-nda | Governing Law | remove protection | true / true | false / false | holds |
 | bonterms-sla | Cap on Liability | insert unusual clause | false / false | true / true | holds |
 | bonterms-psa | Termination for Convenience | remove protection | true / true | false / **true** | miss (after) |
 | commonpaper-psa | Insurance | remove protection | true / true | false / false | holds |
 | commonpaper-psa | Warranty Duration | insert unusual clause | false / false | true / true | holds |
-| commonpaper-mutual-nda | Assignment / Control | insert unusual clause | true / true | true / true | holds |
+| commonpaper-mutual-nda | Change of Control | remove protection | true / true | false / false | holds |
 | bonterms-dpa | Audit Rights | remove protection | true / true | false / **true** | miss (after) |
 | commonpaper-dpa | Audit Rights | remove protection | true / true | false / **true** | miss (after) |
 
 Performance does **not** hold uniformly. It holds cleanly for 6 of 12 edits (CSA auto-renewal,
 NDA governing-law removal, the SLA liability-cap insertion, PSA insurance removal, PSA warranty
-insertion, and — notably — the brief's own named example, the unusual assignment clause). The
+insertion, and the NDA change-of-control removal built from the brief's named example). The
 other 6 fail in three distinct, explainable ways, not randomly:
 
 ### 1. Defined-term drafting is invisible to phrase matching (2 misses)
@@ -114,10 +114,16 @@ positives looks like in a real document.
 
 ### What held up
 
-The brief's own named example — "insert an unusual assignment clause" — worked correctly
-(`commonpaper-mutual-nda`): replacing a standard consent-based assignment clause with one allowing
-free assignment to a competitor was still detected as present, because the matcher only needs the
-word "assignment" to appear, regardless of how unusual the substance is. Three straightforward
+The brief's own named example — "insert an unusual assignment clause" — is `commonpaper-mutual-nda`:
+a standard consent-based assignment clause was replaced with one allowing free assignment to a
+competitor. It was originally scored under "Assignment / Control" as a still-present clause, and
+passed only because the matcher needed nothing more than the word "assignment." On 2026-10-18 that
+category was narrowed to CUAD's Change of Control, and ordinary assignment is now out of scope. The
+item was relabeled accordingly: the original clause allows assignment "in connection with a merger,
+reorganization, acquisition or other transfer of all or substantially all its assets" (change of
+control present), and the edited clause has no such language (absent). Calder detects both
+correctly, but the item now tests a removal, not the brief's "unusual clause" scenario, so that
+scenario is no longer exercised by any Calder category. Three straightforward
 removals (CSA auto-renewal, NDA governing law, PSA insurance) and one clean insertion (PSA warranty
 duration) also behaved exactly as expected.
 

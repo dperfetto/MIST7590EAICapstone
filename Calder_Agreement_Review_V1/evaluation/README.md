@@ -39,7 +39,7 @@ python3 evaluation/evaluate_cuad.py \
 
 - Each CUAD contract is one evaluation example per mapped provision.
 - A category is positive when CUAD contains at least one expert-labeled span for the mapped category.
-- `Assignment / Control` is positive when either CUAD `Anti-Assignment` or `Change Of Control` is positive.
+- Each Calder category maps to exactly one CUAD category with the same name. CUAD `Anti-Assignment` is out of scope.
 - Calder predicts presence when its CUAD-informed deterministic candidate retrieval finds one or more configured cues.
 - The harness does not score risk, acceptable positions, deviations, or gaps.
 - Review category-level positive counts before committing to a provision. Low-support categories produce unstable estimates.
@@ -55,14 +55,14 @@ the category definitions, to understand what they mean and where they're debatab
 Cap on Liability categories (CUAD's own ground truth sometimes labels an ordinary exclusive IP
 license grant as "Exclusivity"), confirmed the Audit Rights labels are clean (so its poor recall is
 a detector problem, not a labeling one), and identified one concrete, unfixed candidate-phrase gap
-("automatically extend" as an Auto Renewal synonym).
+("automatically extend" as an Renewal Term synonym).
 
 ## Section 6.2: which categories are reliable, and why
 
-`CATEGORY_RELIABILITY.md` groups the 10 categories into reliable (Governing Law,
-Assignment/Control), precise-but-under-recalling (Insurance, Auto Renewal, Cap on Liability, Audit
-Rights, Warranty Duration), and not yet reliable (Exclusivity, Renewal Notice, Termination for
-Convenience) — with the specific, evidenced cause for each category's weak spot, not just the
+`CATEGORY_RELIABILITY.md` groups the 10 categories into reliable (Governing Law),
+precise-but-under-recalling (Insurance, Renewal Term, Cap on Liability, Audit
+Rights, Warranty Duration), and not yet reliable (Exclusivity, Notice to Terminate Renewal, Termination for
+Convenience, Change of Control) — with the specific, evidenced cause for each category's weak spot, not just the
 numbers.
 
 ## Independent check: documents nothing could have memorized

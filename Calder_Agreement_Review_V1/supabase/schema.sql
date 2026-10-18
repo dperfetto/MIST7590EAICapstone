@@ -238,10 +238,18 @@ drop policy if exists "Review team reads agreement files" on storage.objects;
 create policy "Review team reads agreement files" on storage.objects for select to authenticated
 using (bucket_id='agreements' and public.current_user_role() in ('reviewer','approver','administrator'));
 
+-- v1.7: provision names match CUAD category names. Existing findings for the
+-- two renamed categories are relabeled. "Assignment / Control" findings are
+-- left as recorded: that category also covered anti-assignment, so they cannot
+-- be relabeled "Change of Control" without changing what was found. Its
+-- playbook rules become "Change of Control" through the upsert below.
+update public.findings set provision='Renewal Term' where provision='Auto Renewal';
+update public.findings set provision='Notice to Terminate Renewal' where provision='Renewal Notice';
+
 insert into public.playbook_rules (id,agreement_type,provision,applicability,standard,method,severity) values
 ('rule-1','Software Subscription','Cap on Liability','R','Cap required; compare basis, amount, and carve-outs','Hybrid','High'),
-('rule-2','Software Subscription','Auto Renewal','M','Monitor renewal term; absence is acceptable','Hybrid','Medium'),
-('rule-3','Software Subscription','Renewal Notice','C','If auto-renewal exists, notice should be 60 days or less','Regex + AI','High'),
+('rule-2','Software Subscription','Renewal Term','M','Monitor renewal term; absence is acceptable','Hybrid','Medium'),
+('rule-3','Software Subscription','Notice to Terminate Renewal','C','If auto-renewal exists, notice should be 60 days or less','Regex + AI','High'),
 ('rule-4','Software Subscription','Governing Law','R','Approved US jurisdiction required','Regex','Medium'),
 ('rule-5','Software Subscription','Exclusivity','M','Any exclusivity requires review','AI','High'),
 ('rule-6','Professional Services','Cap on Liability','R','Cap required and must match approved PSA allocation','Hybrid','High'),
@@ -251,24 +259,29 @@ insert into public.playbook_rules (id,agreement_type,provision,applicability,sta
 ('rule-10','Data Processing Addendum','Cap on Liability','R','Data exposure must match approved DPA standard','Hybrid','High'),
 ('rule-11','Data Processing Addendum','Audit Rights','R','Acceptable audit or assurance mechanism required','AI','High'),
 ('rule-12','Data Processing Addendum','Insurance','C','Cyber coverage required for elevated risk tier','Hybrid','High'),
-('rule-13','Data Processing Addendum','Assignment / Control','C','Processing obligations must survive transfer or control change','AI','High'),
+('rule-13','Data Processing Addendum','Change of Control','C','Processing obligations must survive transfer or control change','AI','High'),
 ('rule-14','Data Processing Addendum','Governing Law','R','DPA or incorporated agreement must provide governing law','Regex','Medium'),
 ('rule-15','Professional Services','Governing Law','M','Disabled stretch metadata - not used by the baseline','Regex','Medium'),
 ('rule-16','Licensing','Cap on Liability','M','Disabled stretch metadata - not used by the baseline','Hybrid','Medium'),
-('rule-17','Licensing','Auto Renewal','M','Disabled stretch metadata - not used by the baseline','Hybrid','Medium'),
-('rule-18','Licensing','Renewal Notice','M','Disabled stretch metadata - not used by the baseline','Hybrid','Medium'),
+('rule-17','Licensing','Renewal Term','M','Disabled stretch metadata - not used by the baseline','Hybrid','Medium'),
+('rule-18','Licensing','Notice to Terminate Renewal','M','Disabled stretch metadata - not used by the baseline','Hybrid','Medium'),
 ('rule-19','Licensing','Governing Law','M','Disabled stretch metadata - not used by the baseline','Regex','Medium'),
 ('rule-20','Licensing','Exclusivity','M','Disabled stretch metadata - not used by the baseline','Hybrid','Medium'),
-('rule-21','Licensing','Assignment / Control','M','Disabled stretch metadata - not used by the baseline','Hybrid','Medium'),
+('rule-21','Licensing','Change of Control','M','Disabled stretch metadata - not used by the baseline','Hybrid','Medium'),
 ('rule-22','Logistics and Freight','Cap on Liability','M','Disabled stretch metadata - not used by the baseline','Hybrid','Medium'),
 ('rule-23','Logistics and Freight','Termination for Convenience','M','Disabled stretch metadata - not used by the baseline','Hybrid','Medium'),
 ('rule-24','Logistics and Freight','Insurance','M','Disabled stretch metadata - not used by the baseline','Hybrid','Medium'),
 ('rule-25','Logistics and Freight','Governing Law','M','Disabled stretch metadata - not used by the baseline','Regex','Medium'),
 ('rule-26','Mutual NDA','Governing Law','M','Disabled stretch metadata - not used by the baseline','Regex','Medium'),
-('rule-27','Mutual NDA','Assignment / Control','M','Disabled stretch metadata - not used by the baseline','Hybrid','Medium'),
+('rule-27','Mutual NDA','Change of Control','M','Disabled stretch metadata - not used by the baseline','Hybrid','Medium'),
 ('rule-28','Other','Cap on Liability','M','Disabled stretch metadata - not used by the baseline','Hybrid','Medium'),
 ('rule-29','Other','Termination for Convenience','M','Disabled stretch metadata - not used by the baseline','Hybrid','Medium'),
 ('rule-30','Other','Insurance','M','Disabled stretch metadata - not used by the baseline','Hybrid','Medium'),
-('rule-31','Other','Assignment / Control','M','Disabled stretch metadata - not used by the baseline','Hybrid','Medium'),
-('rule-32','Other','Governing Law','M','Disabled stretch metadata - not used by the baseline','Regex','Medium')
+('rule-31','Other','Change of Control','M','Disabled stretch metadata - not used by the baseline','Hybrid','Medium'),
+('rule-32','Other','Governing Law','M','Disabled stretch metadata - not used by the baseline','Regex','Medium'),
+('rule-33','Other','Renewal Term','M','Disabled stretch metadata - not used by the baseline','Hybrid','Medium'),
+('rule-34','Other','Notice to Terminate Renewal','M','Disabled stretch metadata - not used by the baseline','Hybrid','Medium'),
+('rule-35','Other','Exclusivity','M','Disabled stretch metadata - not used by the baseline','Hybrid','Medium'),
+('rule-36','Other','Audit Rights','M','Disabled stretch metadata - not used by the baseline','Hybrid','Medium'),
+('rule-37','Other','Warranty Duration','M','Disabled stretch metadata - not used by the baseline','Hybrid','Medium')
 on conflict (id) do update set agreement_type=excluded.agreement_type,provision=excluded.provision,applicability=excluded.applicability,standard=excluded.standard,method=excluded.method,severity=excluded.severity;

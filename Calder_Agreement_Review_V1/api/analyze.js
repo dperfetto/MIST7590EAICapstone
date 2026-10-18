@@ -9,12 +9,12 @@ const allowedTypes = new Set([
 ]);
 const allowedCategories = new Set([
   "Cap on Liability",
-  "Auto Renewal",
-  "Renewal Notice",
+  "Renewal Term",
+  "Notice to Terminate Renewal",
   "Governing Law",
   "Exclusivity",
   "Termination for Convenience",
-  "Assignment / Control",
+  "Change of Control",
   "Audit Rights",
   "Insurance",
   "Warranty Duration",
