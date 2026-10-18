@@ -100,10 +100,10 @@ analysis below finds for this category.
 Two of three sampled Renewal Term examples use the verb "**extend**" ("the Term ... shall
 automatically **extend** for an additional [...] year period"; "the contract will automatically
 **extend** for an additional month of service") rather than "renew." Calder's candidate phrases for
-Auto Renewal (`"automatically renew"`, `"automatic renewal"`, `"shall renew"`, `"extended for
+Renewal Term (`"automatically renew"`, `"automatic renewal"`, `"shall renew"`, `"extended for
 successive"`, `"renew for an additional"`) do not include a bare `"automatically extend"` or
 `"extend for an additional"` phrasing. This is a concrete, actionable finding, not just a
-theoretical gap — it directly explains part of Auto Renewal's measured 61.9% recall
+theoretical gap — it directly explains part of Renewal Term's measured 61.9% recall
 (`evaluation/results/metrics.csv`) and is a specific, low-effort fix: add `"automatically extend"`
 and `"extend for an additional"` to the candidate phrase list.
 
@@ -126,7 +126,7 @@ which is a materially different conclusion than what we found for Exclusivity.
 - Audit Rights' poor recall has no such excuse — the labels are clean, so the fix has to be in the
   candidate phrases or in moving the category toward hosted extraction.
 - Two concrete, low-effort phrase additions are now backed by real examples: `"automatically
-  extend"` / `"extend for an additional"` for Auto Renewal, and the existing exclusion language for
+  extend"` / `"extend for an additional"` for Renewal Term, and the existing exclusion language for
   Exclusivity needs to actually be enforced somewhere (today it only exists as a comment in the
   taxonomy JSON; the deterministic matcher has no mechanism to apply it — see
   `evaluation/independent-check/RESULTS.md` for the concrete false positive this produces).

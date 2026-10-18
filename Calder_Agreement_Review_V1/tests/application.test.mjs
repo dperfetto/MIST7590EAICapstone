@@ -164,7 +164,8 @@ test("CUAD taxonomy contains ten mapped categories with inclusion and exclusion 
 test("all 41 CUAD categories have an explicit mapping decision", () => {
   const rows = mappingCsv.trim().split(/\r?\n/);
   assert.equal(rows.length, 42);
-  assert.match(mappingCsv, /Renewal Term,Auto Renewal,partial/);
+  assert.match(mappingCsv, /Renewal Term,Renewal Term,direct/);
+  assert.match(mappingCsv, /Anti-Assignment,,out_of_scope/);
   assert.match(mappingCsv, /Uncapped Liability,,out_of_scope/);
 });
 

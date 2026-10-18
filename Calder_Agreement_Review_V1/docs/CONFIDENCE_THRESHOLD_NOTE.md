@@ -59,22 +59,22 @@ gitignored and not present in every environment — but it is real, measured dat
 
 **How much does the system miss entirely — find nothing at all?** This is recall, from the
 committed CUAD evaluation (`evaluation/results/metrics.csv`, 510 contracts): **micro recall is
-73.8%** across the 10 active categories (1,618 of 2,193 expert-labeled positive instances found).
-That means roughly **one in four** provisions the playbook is looking for, and that is actually
+70.2%** across the 10 active categories (1,361 of 1,938 expert-labeled positive instances found).
+That means roughly **three in ten** provisions the playbook is looking for, and that is actually
 present in a submitted agreement, never generates a finding at all — not a low-confidence finding,
-no finding. This is uneven across categories, not a flat 26%:
+no finding. This is uneven across categories, not a flat 30%:
 
 | Category | Recall | Miss rate |
 |---|---|---|
 | Governing Law | 99.8% | 0.2% |
-| Assignment / Control | 97.3% | 2.7% |
 | Exclusivity | 97.8% | 2.2% |
+| Change of Control | 90.1% | 9.9% |
 | Termination for Convenience | 70.0% | 30.0% |
 | Insurance | 67.5% | 32.5% |
-| Auto Renewal | 61.9% | 38.1% |
+| Renewal Term | 61.9% | 38.1% |
 | Cap on Liability | 54.6% | 45.5% |
 | Warranty Duration | 38.7% | 61.3% |
-| Renewal Notice | 39.6% | 60.4% |
+| Notice to Terminate Renewal | 39.6% | 60.4% |
 | **Audit Rights** | **31.8%** | **68.2%** |
 
 The Section 6.3 independent check corroborates this is not a CUAD-specific artifact: of 12
@@ -92,11 +92,11 @@ improve recall; only better candidate phrases, hosted extraction, or manual fall
 Directly: **rely on it for triage, not for completeness.** Every finding requires your or a
 reviewer's sign-off regardless of its confidence score — the system never auto-clears anything, so
 a high-confidence finding is not a finding you can skip. What the confidence score cannot tell you
-is what never made it into the queue. On the categories currently in scope, roughly one in four
+is what never made it into the queue. On the categories currently in scope, roughly three in ten
 present provisions generates no finding at all, concentrated heavily in Audit Rights, Renewal
 Notice, Warranty Duration, and Cap on Liability — if a DPA has a real audit-rights problem, this
-system is worse than a coin flip at surfacing it on its own. Governing Law, Assignment/Control, and
-Exclusivity are the strongest categories and close to complete.
+system is worse than a coin flip at surfacing it on its own. Governing Law, Exclusivity, and Change of
+Control are close to complete, though Exclusivity and Change of Control also over-flag heavily.
 
 So: use Calder to find the forty of two hundred that clearly need you, fast. Don't use it to
 conclude that the other hundred and sixty are clean — nothing in this system's design claims that,

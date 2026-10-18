@@ -91,7 +91,7 @@ const url = import.meta.env.VITE_SUPABASE_URL?.trim();
 const key = import.meta.env.VITE_SUPABASE_ANON_KEY?.trim();
 export const connected = Boolean(url && key);
 export const supabase = connected ? createClient(url, key) : null;
-const LOCAL_KEY = "calder-demo-v1-6";
+const LOCAL_KEY = "calder-demo-v1-7";
 const now = () => new Date().toISOString();
 const uid = () => crypto.randomUUID();
 const agreementReviewStatus = (statuses: string[], currentStatus: string) => {
@@ -165,7 +165,7 @@ const seed: Data = {
     {
       id: "f-1",
       agreementId: "agr-1042",
-      provision: "Renewal Notice",
+      provision: "Notice to Terminate Renewal",
       findingType: "present",
       severity: "medium",
       confidence: 94,
@@ -236,7 +236,7 @@ const seed: Data = {
     ],
     [
       "Software Subscription",
-      "Auto Renewal",
+      "Renewal Term",
       "M",
       "Monitor renewal term; absence is acceptable",
       "Hybrid",
@@ -244,7 +244,7 @@ const seed: Data = {
     ],
     [
       "Software Subscription",
-      "Renewal Notice",
+      "Notice to Terminate Renewal",
       "C",
       "If auto-renewal exists, notice should be 60 days or less",
       "Regex + AI",
@@ -324,7 +324,7 @@ const seed: Data = {
     ],
     [
       "Data Processing Addendum",
-      "Assignment / Control",
+      "Change of Control",
       "C",
       "Processing obligations must survive transfer or control change",
       "AI",
@@ -356,7 +356,7 @@ const seed: Data = {
     ],
     [
       "Licensing",
-      "Auto Renewal",
+      "Renewal Term",
       "M",
       "Disabled stretch metadata - not used by the baseline",
       "Hybrid",
@@ -364,7 +364,7 @@ const seed: Data = {
     ],
     [
       "Licensing",
-      "Renewal Notice",
+      "Notice to Terminate Renewal",
       "M",
       "Disabled stretch metadata - not used by the baseline",
       "Hybrid",
@@ -388,7 +388,7 @@ const seed: Data = {
     ],
     [
       "Licensing",
-      "Assignment / Control",
+      "Change of Control",
       "M",
       "Disabled stretch metadata - not used by the baseline",
       "Hybrid",
@@ -436,7 +436,7 @@ const seed: Data = {
     ],
     [
       "Mutual NDA",
-      "Assignment / Control",
+      "Change of Control",
       "M",
       "Disabled stretch metadata - not used by the baseline",
       "Hybrid",
@@ -468,7 +468,7 @@ const seed: Data = {
     ],
     [
       "Other",
-      "Assignment / Control",
+      "Change of Control",
       "M",
       "Disabled stretch metadata - not used by the baseline",
       "Hybrid",
@@ -480,6 +480,46 @@ const seed: Data = {
       "M",
       "Disabled stretch metadata - not used by the baseline",
       "Regex",
+      "Medium",
+    ],
+    [
+      "Other",
+      "Renewal Term",
+      "M",
+      "Disabled stretch metadata - not used by the baseline",
+      "Hybrid",
+      "Medium",
+    ],
+    [
+      "Other",
+      "Notice to Terminate Renewal",
+      "M",
+      "Disabled stretch metadata - not used by the baseline",
+      "Hybrid",
+      "Medium",
+    ],
+    [
+      "Other",
+      "Exclusivity",
+      "M",
+      "Disabled stretch metadata - not used by the baseline",
+      "Hybrid",
+      "Medium",
+    ],
+    [
+      "Other",
+      "Audit Rights",
+      "M",
+      "Disabled stretch metadata - not used by the baseline",
+      "Hybrid",
+      "Medium",
+    ],
+    [
+      "Other",
+      "Warranty Duration",
+      "M",
+      "Disabled stretch metadata - not used by the baseline",
+      "Hybrid",
       "Medium",
     ],
   ].map((r, i) => ({

@@ -12,19 +12,19 @@
       "candidatePhrases": ["limitation of liability", "aggregate liability", "liability shall not exceed", "maximum liability", "liability cap", "in no event shall liability", "amount recoverable", "claims must be brought within"]
     },
     {
-      "calderProvision": "Auto Renewal",
+      "calderProvision": "Renewal Term",
       "cuadCategories": ["Renewal Term"],
       "description": "Automatic or unilateral extension of the agreement after the initial term.",
       "exclusions": ["Do not label the initial term or a renewal that requires a new mutual agreement; the extension must be automatic or exercisable by one party."],
-      "contractTypes": ["Software Subscription", "Licensing"],
+      "contractTypes": ["Software Subscription", "Licensing", "Other"],
       "candidatePhrases": ["automatically renew", "automatic renewal", "successive renewal", "renewal term", "shall renew", "extended for successive", "renew for an additional"]
     },
     {
-      "calderProvision": "Renewal Notice",
+      "calderProvision": "Notice to Terminate Renewal",
       "cuadCategories": ["Notice Period To Terminate Renewal"],
       "description": "Advance notice required to prevent or terminate a renewal.",
       "exclusions": ["Do not label a general termination notice period unless the text ties the notice to renewal or expiration."],
-      "contractTypes": ["Software Subscription", "Licensing"],
+      "contractTypes": ["Software Subscription", "Licensing", "Other"],
       "candidatePhrases": ["notice of non-renewal", "notice not to renew", "terminate renewal", "prior to renewal", "before expiration", "days prior written notice", "months prior written notice"]
     },
     {
@@ -40,7 +40,7 @@
       "cuadCategories": ["Exclusivity"],
       "description": "Exclusive dealing, requirements purchasing, or restrictions on working with third parties.",
       "exclusions": ["Do not label an exclusive remedy, an exclusive jurisdiction clause, or an intellectual-property license merely because it uses the word exclusive."],
-      "contractTypes": ["Software Subscription", "Licensing"],
+      "contractTypes": ["Software Subscription", "Licensing", "Other"],
       "candidatePhrases": ["exclusive", "exclusively", "exclusivity", "sole provider", "all requirements", "shall not engage", "shall not license", "shall not sell to"]
     },
     {
@@ -52,19 +52,19 @@
       "candidatePhrases": ["termination for convenience", "terminate for convenience", "without cause", "for any reason", "for no reason", "at any time upon", "sole discretion may terminate"]
     },
     {
-      "calderProvision": "Assignment / Control",
-      "cuadCategories": ["Anti-Assignment", "Change Of Control"],
-      "description": "Consent, notice, or termination rights tied to assignment or a change in control.",
-      "exclusions": ["Do not label an ordinary license grant or transfer of goods unless it governs assignment of the agreement, rights, obligations, or a change in control."],
+      "calderProvision": "Change of Control",
+      "cuadCategories": ["Change Of Control"],
+      "description": "A party has the right to terminate, or consent or notice of the counterparty is required, if a party undergoes a change of control, such as a merger, stock sale, transfer of all or substantially all of its assets or business, or assignment by operation of law.",
+      "exclusions": ["Do not label an anti-assignment clause that only restricts assigning the agreement to a third party; the text must tie consent, notice, or termination to a change in the ownership or control of a party."],
       "contractTypes": ["Licensing", "Data Processing Addendum", "Mutual NDA", "Other"],
-      "candidatePhrases": ["may not assign", "shall not assign", "assignment", "assign this agreement", "prior written consent", "change of control", "merger", "operation of law", "substantially all assets"]
+      "candidatePhrases": ["change of control", "change in control", "change of ownership", "controlling interest", "merger", "operation of law", "substantially all assets", "substantially all of its assets"]
     },
     {
       "calderProvision": "Audit Rights",
       "cuadCategories": ["Audit Rights"],
       "description": "A right to inspect or audit books, records, systems, or locations for compliance.",
       "exclusions": ["Do not label a reference to a party's normal financial audit unless another party receives an inspection, access, or assurance-report right."],
-      "contractTypes": ["Data Processing Addendum"],
+      "contractTypes": ["Data Processing Addendum", "Other"],
       "candidatePhrases": ["right to audit", "audit rights", "inspect the books", "inspect records", "inspection of", "audit of", "access to records", "soc 2", "assurance report"]
     },
     {
@@ -80,7 +80,7 @@
       "cuadCategories": ["Warranty Duration"],
       "description": "The period during which a warranty against defects or errors applies.",
       "exclusions": ["Do not label a warranty or disclaimer that does not state a duration, deadline, or measurable warranty period."],
-      "contractTypes": ["Professional Services"],
+      "contractTypes": ["Professional Services", "Other"],
       "candidatePhrases": ["warranty period", "warranty shall", "warrants for", "days following acceptance", "months from delivery", "years from delivery", "defects for a period", "errors for a period"]
     }
   ]

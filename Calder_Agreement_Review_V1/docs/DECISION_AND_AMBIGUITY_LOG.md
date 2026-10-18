@@ -20,11 +20,11 @@
 
 ## Category selection
 
-**Decision:** Use ten measurable categories: Cap on Liability, Auto Renewal, Renewal Notice, Governing Law, Exclusivity, Termination for Convenience, Assignment / Control, Audit Rights, Insurance, and Warranty Duration.
+**Decision:** Use ten measurable categories, named exactly as their CUAD categories: Cap on Liability, Renewal Term, Notice to Terminate Renewal, Governing Law, Exclusivity, Termination for Convenience, Change of Control, Audit Rights, Insurance, and Warranty Duration. Every contract-type playbook, including Other, may use them; Other carries all ten.
 
 **Rationale:** These concepts touch recurring vendor-agreement review and have mapped CUAD examples. Full-corpus positive counts are recorded in `evaluation/results/metrics.csv`; the smallest mapped category, Warranty Duration, still has 75 positive contracts.
 
-**Ambiguity:** CUAD `Renewal Term` is broader than Calder `Auto Renewal`, and `Assignment / Control` combines CUAD `Anti-Assignment` and `Change Of Control`. The mapping file marks these relationships rather than pretending they are exact synonyms.
+**Ambiguity:** Until 2026-10-18 three names differed from CUAD: `Auto Renewal` (CUAD `Renewal Term`), `Renewal Notice` (CUAD `Notice to Terminate Renewal`), and `Assignment / Control`, which combined CUAD `Anti-Assignment` and `Change Of Control`. The first two were renamed. The third was narrowed to CUAD `Change of Control` and detects only change-of-control language, so its name describes exactly what it finds; ordinary anti-assignment clauses are out of scope. This lowered that category's measured precision from 0.88 to 0.45 (see `evaluation/CATEGORY_RELIABILITY.md`). Findings recorded under `Assignment / Control` before the change keep that name.
 
 ## Confidence
 

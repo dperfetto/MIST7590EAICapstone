@@ -17,7 +17,7 @@
           "note": "Still present after the edit; only the cap value changed. Drafted as a defined term ('General Cap') rather than with the literal phrase 'liability cap'."
         },
         {
-          "provision": "Renewal Notice",
+          "provision": "Notice to Terminate Renewal",
           "editType": "shorten-notice-period",
           "description": "Section 14.1 non-renewal notice window changed from 'at least 30 days' to 'at least 5 days'.",
           "expectedBefore": true,
@@ -34,7 +34,7 @@
       "source": "Common Paper Cloud Service Agreement (CC BY 4.0)",
       "edits": [
         {
-          "provision": "Auto Renewal",
+          "provision": "Renewal Term",
           "editType": "remove-protection",
           "description": "Section 5.1 automatic-renewal language removed; the agreement now ends at the end of the Subscription Period with no renewal.",
           "expectedBefore": true,
@@ -107,6 +107,7 @@
           "expectedBefore": true,
           "expectedAfter": false,
           "note": "Confirmed false positive after removal (see RESULTS.md): the matcher instead latches onto an unrelated IP-assignment/attorney-in-fact clause elsewhere in the 42-page document that happens to contain the generic phrase 'for any reason', which is also one of this category's candidate phrases."
+        }
       ]
     },
     {
@@ -140,12 +141,12 @@
       "source": "Common Paper Mutual NDA (CC BY 4.0)",
       "edits": [
         {
-          "provision": "Assignment / Control",
-          "editType": "insert-unusual-clause",
+          "provision": "Change of Control",
+          "editType": "remove-protection",
           "description": "Section 11 'General' consent-based assignment clause replaced with an unusual clause permitting free assignment to anyone, including a direct competitor, without notice or consent.",
           "expectedBefore": true,
-          "expectedAfter": true,
-          "note": "Still present after the edit — the provision is unusual in substance, not absent. Tests whether detection is robust to atypical wording of a still-present clause, the brief's named example edit."
+          "expectedAfter": false,
+          "note": "Relabeled 2026-10-18 when 'Assignment / Control' was narrowed to CUAD's 'Change of Control'. The original clause ties assignment to 'a merger, reorganization, acquisition or other transfer of all or substantially all its assets or voting securities' (change-of-control language, so present before). The modified clause allows free assignment with no change-of-control language (absent after). Previously labeled true/true as an atypically worded but still-present assignment clause; ordinary anti-assignment is now out of scope."
         }
       ]
     },
@@ -163,6 +164,7 @@
           "expectedBefore": true,
           "expectedAfter": false,
           "note": "Confirmed false positive after removal (see RESULTS.md): the retained sentence 'any audit rights granted by Data Protection Laws will be satisfied by the Audit Reports' still contains the literal candidate phrase 'audit rights', even though it refers to rights granted by statute rather than by Provider, and no customer-initiated audit mechanism remains in the document."
+        }
       ]
     },
     {
