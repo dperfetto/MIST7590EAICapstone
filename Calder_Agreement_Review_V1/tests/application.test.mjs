@@ -7,7 +7,7 @@ const [
   workspace, data, analyzer, retrieval, aiEndpoint, styles, shell, main,
   schema, app, viteConfig, mappingCsv, evaluator, pdfEvaluator, changeLog,
   decisionLog, stretchBacklog, hostingComparison, classifierApp,
-  ingestionVerifier,
+  ingestionVerifier, agreementFiles, documentPreview,
 ] = await Promise.all([
   read("../src/Workspace.tsx"), read("../src/lib/data.ts"),
   read("../src/lib/analyze.ts"), read("../src/lib/candidateRetrieval.ts"),
@@ -22,6 +22,7 @@ const [
   read("../docs/STRETCH_BACKLOG.md"), read("../docs/HOSTING_COMPARISON.md"),
   read("../classifier-service/app.py"),
   read("../scripts/verify_ingestion.mjs"),
+  read("../src/lib/agreementFiles.ts"), read("../src/lib/documentPreview.ts"),
 ]);
 const taxonomy = JSON.parse(await read("../src/data/cuad-calder-taxonomy.json"));
 const metrics = JSON.parse(await read("../evaluation/results/metrics.json"));
@@ -163,7 +164,8 @@ test("CUAD taxonomy contains ten mapped categories with inclusion and exclusion 
 test("all 41 CUAD categories have an explicit mapping decision", () => {
   const rows = mappingCsv.trim().split(/\r?\n/);
   assert.equal(rows.length, 42);
-  assert.match(mappingCsv, /Renewal Term,Auto Renewal,partial/);
+  assert.match(mappingCsv, /Renewal Term,Renewal Term,direct/);
+  assert.match(mappingCsv, /Anti-Assignment,,out_of_scope/);
   assert.match(mappingCsv, /Uncapped Liability,,out_of_scope/);
 });
 
@@ -342,4 +344,44 @@ test("manual findings keep a zero confidence and verify their source text", () =
   assert.match(analyzer, /\.from\("agreements"\)\s*\.download\(storageKey\)/);
   assert.match(workspace, /text && !sourceTextInDocument\(f\.sourceText, text\)/);
   assert.match(workspace, /<ManualFinding key=\{current\.id\} agreement=\{current\}/);
+});
+
+test("reviewers can see the submitted document in the review queue", () => {
+  // The chosen analysis path is stored with the agreement in both modes.
+  assert.match(workspace, /analysisPath: analysisMode/);
+  assert.match(data, /analysisPath: normalizeAnalysisPath\(body\.analysisPath\)/);
+  assert.match(data, /analysis_path: normalizeAnalysisPath\(body\.analysisPath\)/);
+  assert.match(data, /analysisPath: normalizeAnalysisPath\(r\.analysis_path\)/);
+  assert.match(schema, /add column if not exists analysis_path text/);
+  // Demo uploads keep the file so the queue can show it.
+  assert.match(data, /await saveLocalFile\(key, file\)/);
+  assert.match(agreementFiles, /indexedDB\.open/);
+  assert.match(analyzer, /export async function loadAgreementFile/);
+  // Manual path shows every page; other paths show a click-to-download preview.
+  assert.match(workspace, /<AgreementDocument key=\{`doc-\$\{current\.id\}`\} agreement=\{current\}/);
+  assert.match(workspace, /const fullView = agreement\.analysisPath === "manual"/);
+  assert.match(workspace, /renderPdfPages\(file, container/);
+  assert.match(workspace, /renderPdfThumbnail\(file\)/);
+  assert.match(documentPreview, /link\.download = filename/);
+});
+
+test("AI evaluation results are readable by administrators only and never written by the app", () => {
+  for (const table of ["evaluation_runs", "evaluation_results"]) {
+    assert.match(schema, new RegExp(`alter table public\\.${table} enable row level security`));
+    assert.match(
+      schema,
+      new RegExp(`on public\\.${table} for select to authenticated\\s+using \\(public\\.current_user_role\\(\\)='administrator'\\)`),
+    );
+    assert.doesNotMatch(schema, new RegExp(`on public\\.${table} for (insert|update|delete|all)`));
+  }
+  assert.doesNotMatch(data, /from\("evaluation_(runs|results)"\)\s*\.(insert|update|upsert|delete)/);
+  assert.match(data, /evaluation_results[\s\S]*?\.range\(from, from \+ 999\)/);
+  assert.match(workspace, /\["evaluation", "AI evaluation", FlaskConical\]/);
+  assert.match(workspace, /view === "evaluation" && data\.me\.role === "administrator" && <Evaluation \/>/);
+  for (const role of ["submitter", "reviewer", "approver"])
+    assert.doesNotMatch(
+      workspace.match(new RegExp(`  ${role}: \\[[^\\]]*\\]`))[0],
+      /"evaluation"/,
+    );
+  assert.doesNotMatch(workspace, /overall accuracy[^.]*%/i);
 });

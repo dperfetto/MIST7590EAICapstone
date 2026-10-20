@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import { saveLocalFile } from "./agreementFiles";
 import { taxonomy } from "./candidateRetrieval";
 
 export type UserRole = "submitter" | "reviewer" | "approver" | "administrator";
@@ -11,6 +12,11 @@ export const agreementTypes = [
   "Mutual NDA",
   "Other",
 ] as const;
+export type AnalysisPath = "automatic" | "deterministic" | "manual";
+export const normalizeAnalysisPath = (value: unknown): AnalysisPath | null =>
+  value === "automatic" || value === "deterministic" || value === "manual"
+    ? value
+    : null;
 export const roleLabels: Record<UserRole, string> = {
   submitter: "Submitter",
   reviewer: "Reviewer",
@@ -30,6 +36,11 @@ export type Agreement = {
   neededBy: string;
   filename: string;
   storageKey?: string | null;
+  /** Analysis path the Requester chose at intake. Decides how the review
+   *  queue shows the document: manual = full scrollable document,
+   *  automatic/deterministic = small click-to-download preview.
+   *  Null for agreements created before this was recorded. */
+  analysisPath?: AnalysisPath | null;
   status: string;
   playbookVersion: string;
   createdAt: string;
@@ -66,6 +77,36 @@ export type Audit = {
   createdAt: string;
 };
 export type UserProfile = { id: string; name: string; role: UserRole };
+export type EvaluationOutcome =
+  | "found"
+  | "missed"
+  | "wrong_flag"
+  | "correctly_silent";
+export type EvaluationResult = {
+  contract: string;
+  provision: string;
+  expertPresent: boolean;
+  calderFlagged: boolean;
+  outcome: EvaluationOutcome;
+  confidence: number | null;
+  calderQuote: string | null;
+  quoteOverlaps: boolean | null;
+  expertClause: string | null;
+  keywordFlagged: boolean;
+  methodUsed: string;
+};
+export type EvaluationRun = {
+  id: string;
+  label: string;
+  runAt: string;
+  model: string;
+  agreementType: string;
+  contracts: number;
+  aiCalls: number;
+  aiFallbacks: number;
+  notes: string;
+  results: EvaluationResult[];
+};
 export type Data = {
   me: { name: string; email: string; role: UserRole };
   agreements: Agreement[];
@@ -80,7 +121,7 @@ const url = import.meta.env.VITE_SUPABASE_URL?.trim();
 const key = import.meta.env.VITE_SUPABASE_ANON_KEY?.trim();
 export const connected = Boolean(url && key);
 export const supabase = connected ? createClient(url, key) : null;
-const LOCAL_KEY = "calder-demo-v1-6";
+const LOCAL_KEY = "calder-demo-v1-7";
 const now = () => new Date().toISOString();
 const uid = () => crypto.randomUUID();
 const agreementReviewStatus = (statuses: string[], currentStatus: string) => {
@@ -154,7 +195,7 @@ const seed: Data = {
     {
       id: "f-1",
       agreementId: "agr-1042",
-      provision: "Renewal Notice",
+      provision: "Notice to Terminate Renewal",
       findingType: "present",
       severity: "medium",
       confidence: 94,
@@ -225,7 +266,7 @@ const seed: Data = {
     ],
     [
       "Software Subscription",
-      "Auto Renewal",
+      "Renewal Term",
       "M",
       "Monitor renewal term; absence is acceptable",
       "Hybrid",
@@ -233,7 +274,7 @@ const seed: Data = {
     ],
     [
       "Software Subscription",
-      "Renewal Notice",
+      "Notice to Terminate Renewal",
       "C",
       "If auto-renewal exists, notice should be 60 days or less",
       "Regex + AI",
@@ -313,7 +354,7 @@ const seed: Data = {
     ],
     [
       "Data Processing Addendum",
-      "Assignment / Control",
+      "Change of Control",
       "C",
       "Processing obligations must survive transfer or control change",
       "AI",
@@ -345,7 +386,7 @@ const seed: Data = {
     ],
     [
       "Licensing",
-      "Auto Renewal",
+      "Renewal Term",
       "M",
       "Disabled stretch metadata - not used by the baseline",
       "Hybrid",
@@ -353,7 +394,7 @@ const seed: Data = {
     ],
     [
       "Licensing",
-      "Renewal Notice",
+      "Notice to Terminate Renewal",
       "M",
       "Disabled stretch metadata - not used by the baseline",
       "Hybrid",
@@ -377,7 +418,7 @@ const seed: Data = {
     ],
     [
       "Licensing",
-      "Assignment / Control",
+      "Change of Control",
       "M",
       "Disabled stretch metadata - not used by the baseline",
       "Hybrid",
@@ -425,7 +466,7 @@ const seed: Data = {
     ],
     [
       "Mutual NDA",
-      "Assignment / Control",
+      "Change of Control",
       "M",
       "Disabled stretch metadata - not used by the baseline",
       "Hybrid",
@@ -457,7 +498,7 @@ const seed: Data = {
     ],
     [
       "Other",
-      "Assignment / Control",
+      "Change of Control",
       "M",
       "Disabled stretch metadata - not used by the baseline",
       "Hybrid",
@@ -469,6 +510,46 @@ const seed: Data = {
       "M",
       "Disabled stretch metadata - not used by the baseline",
       "Regex",
+      "Medium",
+    ],
+    [
+      "Other",
+      "Renewal Term",
+      "M",
+      "Disabled stretch metadata - not used by the baseline",
+      "Hybrid",
+      "Medium",
+    ],
+    [
+      "Other",
+      "Notice to Terminate Renewal",
+      "M",
+      "Disabled stretch metadata - not used by the baseline",
+      "Hybrid",
+      "Medium",
+    ],
+    [
+      "Other",
+      "Exclusivity",
+      "M",
+      "Disabled stretch metadata - not used by the baseline",
+      "Hybrid",
+      "Medium",
+    ],
+    [
+      "Other",
+      "Audit Rights",
+      "M",
+      "Disabled stretch metadata - not used by the baseline",
+      "Hybrid",
+      "Medium",
+    ],
+    [
+      "Other",
+      "Warranty Duration",
+      "M",
+      "Disabled stretch metadata - not used by the baseline",
+      "Hybrid",
       "Medium",
     ],
   ].map((r, i) => ({
@@ -522,6 +603,7 @@ const camelAgreement = (r: any): Agreement => ({
   neededBy: r.needed_by,
   filename: r.filename,
   storageKey: r.storage_key,
+  analysisPath: normalizeAnalysisPath(r.analysis_path),
   status: r.status,
   playbookVersion: r.playbook_version,
   createdAt: r.created_at,
@@ -638,6 +720,59 @@ async function currentUser() {
   if (error || !data.user) throw new Error("Please sign in to continue.");
   return data.user;
 }
+// AI evaluation runs (brief Sections 6.1/6.2), loaded into Supabase from
+// evaluation/build_ai_check_set_report.py --sql. Row-level security returns
+// them to Administrators only; demo mode has none.
+export async function getEvaluations(): Promise<EvaluationRun[]> {
+  if (!supabase) return [];
+  const runs = await supabase
+    .from("evaluation_runs")
+    .select("*")
+    .order("run_at", { ascending: false });
+  if (runs.error) throw runs.error;
+  // Supabase caps a request at 1,000 rows by default, so page through.
+  const rows: any[] = [];
+  for (let from = 0; ; from += 1000) {
+    const page = await supabase
+      .from("evaluation_results")
+      .select("*")
+      .order("run_id")
+      .order("contract")
+      .order("provision")
+      .range(from, from + 999);
+    if (page.error) throw page.error;
+    rows.push(...(page.data || []));
+    if ((page.data || []).length < 1000) break;
+  }
+  const results = { data: rows };
+  return (runs.data || []).map((r: any) => ({
+    id: r.id,
+    label: r.label,
+    runAt: r.run_at,
+    model: r.model,
+    agreementType: r.agreement_type,
+    contracts: r.contracts,
+    aiCalls: r.ai_calls,
+    aiFallbacks: r.ai_fallbacks,
+    notes: r.notes,
+    results: (results.data || [])
+      .filter((row: any) => row.run_id === r.id)
+      .map((row: any) => ({
+        contract: row.contract,
+        provision: row.provision,
+        expertPresent: row.expert_present,
+        calderFlagged: row.calder_flagged,
+        outcome: row.outcome,
+        confidence: row.confidence,
+        calderQuote: row.calder_quote,
+        quoteOverlaps: row.quote_overlaps,
+        expertClause: row.expert_clause,
+        keywordFlagged: row.keyword_flagged,
+        methodUsed: row.method_used,
+      })),
+  }));
+}
+
 export async function getWorkspace(): Promise<Data> {
   if (!supabase) return localRead();
   const user = await currentUser();
@@ -747,6 +882,7 @@ export async function performAction(body: Record<string, unknown>) {
         neededBy: String(body.neededBy),
         filename: String(body.filename || "Manual intake"),
         storageKey: String(body.storageKey || ""),
+        analysisPath: normalizeAnalysisPath(body.analysisPath),
         status: String(body.status || "manual_review_required"),
         playbookVersion: `${body.agreementType} v1`,
         createdAt: now(),
@@ -905,6 +1041,7 @@ export async function performAction(body: Record<string, unknown>) {
         needed_by: body.neededBy,
         filename: body.filename || "Manual intake",
         storage_key: body.storageKey || null,
+        analysis_path: normalizeAnalysisPath(body.analysisPath),
         status: body.status || "manual_review_required",
         playbook_version: `${body.agreementType} v1`,
       });
@@ -1058,11 +1195,12 @@ export async function uploadPdf(file: File) {
     /\.(pdf|txt)$/i.test(file.name);
   if (!supported || file.size > 10 * 1024 * 1024)
     throw new Error("Upload a PDF or TXT file no larger than 10 MB.");
-  if (!supabase)
-    return {
-      filename: file.name,
-      key: `local-demo/${Date.now()}-${file.name}`,
-    };
+  if (!supabase) {
+    const key = `local-demo/${Date.now()}-${file.name}`;
+    // Keep the file in this browser so the review queue can show it.
+    await saveLocalFile(key, file);
+    return { filename: file.name, key };
+  }
   const user = await currentUser();
   const safe = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
   const path = `${user.id}/${Date.now()}-${safe}`;
@@ -1094,6 +1232,16 @@ export function installWorkspaceApi() {
         : input instanceof URL
           ? input.pathname
           : input.url;
+    if (requestUrl.endsWith("/api/evaluations")) {
+      try {
+        return jsonResponse(await getEvaluations());
+      } catch (error) {
+        return jsonResponse(
+          { error: error instanceof Error ? error.message : "Unexpected error" },
+          { status: 500 },
+        );
+      }
+    }
     if (!requestUrl.endsWith("/api/workspace")) return nativeFetch(input, init);
     try {
       const method = (init?.method || "GET").toUpperCase();

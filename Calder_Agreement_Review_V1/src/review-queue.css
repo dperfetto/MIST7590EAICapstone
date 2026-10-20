@@ -1,0 +1,51 @@
+/* Keep review-queue details readable, with scrolling when the viewport is narrow. */
+.review-layout {
+  grid-template-columns: minmax(320px, 0.9fr) minmax(0, 2fr);
+  align-items: start;
+}
+
+.queue-list {
+  min-width: 0;
+  overflow: visible;
+}
+
+.queue-items {
+  max-height: min(72vh, 720px);
+  overflow: auto;
+  scrollbar-gutter: stable;
+}
+
+.queue-items > button {
+  min-width: 320px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+}
+
+.queue-items > button > div {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 1050px) {
+  .review-layout {
+    grid-template-columns: minmax(280px, 0.8fr) minmax(0, 1.6fr);
+  }
+}
+
+@media (max-width: 760px) {
+  .review-layout {
+    display: block;
+  }
+
+  .queue-list {
+    width: 100%;
+  }
+
+  .queue-items {
+    max-height: min(55vh, 420px);
+  }
+
+  .queue-items > button {
+    min-width: 340px;
+  }
+}

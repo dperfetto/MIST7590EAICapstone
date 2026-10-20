@@ -2,9 +2,9 @@
   "dataset": "CUAD v1",
   "contracts": 510,
   "evaluation_unit": "document-category presence",
-  "micro_precision": 0.7443,
-  "micro_recall": 0.7378,
-  "micro_f1": 0.741,
+  "micro_precision": 0.6798,
+  "micro_recall": 0.7023,
+  "micro_f1": 0.6909,
   "categories": [
     {
       "provision": "Cap on Liability",
@@ -18,7 +18,7 @@
       "f1": 0.6944
     },
     {
-      "provision": "Auto Renewal",
+      "provision": "Renewal Term",
       "tp": 109,
       "fp": 10,
       "fn": 67,
@@ -29,7 +29,7 @@
       "f1": 0.739
     },
     {
-      "provision": "Renewal Notice",
+      "provision": "Notice to Terminate Renewal",
       "tp": 44,
       "fp": 62,
       "fn": 67,
@@ -73,15 +73,15 @@
       "f1": 0.5614
     },
     {
-      "provision": "Assignment / Control",
-      "tp": 366,
-      "fp": 50,
-      "fn": 10,
-      "tn": 84,
-      "positive_contracts": 376,
-      "precision": 0.8798,
-      "recall": 0.9734,
-      "f1": 0.9242
+      "provision": "Change of Control",
+      "tp": 109,
+      "fp": 135,
+      "fn": 12,
+      "tn": 254,
+      "positive_contracts": 121,
+      "precision": 0.4467,
+      "recall": 0.9008,
+      "f1": 0.5973
     },
     {
       "provision": "Audit Rights",

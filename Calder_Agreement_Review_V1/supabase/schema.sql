@@ -75,6 +75,12 @@ update public.agreements set agreement_type='Data Processing Addendum' where agr
 alter table public.agreements add constraint agreements_agreement_type_check
   check (agreement_type in ('Software Subscription','Professional Services','Licensing','Logistics and Freight','Data Processing Addendum','Mutual NDA','Other'));
 
+-- The analysis path chosen at intake decides how the review queue presents
+-- the document: manual shows the full document, automatic/deterministic show a
+-- click-to-download preview. Older rows stay null and get the preview.
+alter table public.agreements add column if not exists analysis_path text
+  check (analysis_path is null or analysis_path in ('automatic','deterministic','manual'));
+
 create table if not exists public.findings (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
@@ -232,10 +238,59 @@ drop policy if exists "Review team reads agreement files" on storage.objects;
 create policy "Review team reads agreement files" on storage.objects for select to authenticated
 using (bucket_id='agreements' and public.current_user_role() in ('reviewer','approver','administrator'));
 
+-- AI evaluation results (brief Sections 6.1/6.2). Loaded by pasting the SQL
+-- file that evaluation/build_ai_check_set_report.py writes into the SQL
+-- Editor; the app can only read them, and only Administrators can.
+create table if not exists public.evaluation_runs (
+  id text primary key,
+  label text not null,
+  run_at timestamptz not null,
+  model text not null,
+  agreement_type text not null,
+  contracts integer not null,
+  ai_calls integer not null,
+  ai_fallbacks integer not null,
+  notes text not null default '',
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.evaluation_results (
+  run_id text not null references public.evaluation_runs(id) on delete cascade,
+  contract text not null,
+  provision text not null,
+  expert_present boolean not null,
+  calder_flagged boolean not null,
+  outcome text not null check (outcome in ('found','missed','wrong_flag','correctly_silent')),
+  confidence integer check (confidence is null or confidence between 0 and 100),
+  calder_quote text,
+  quote_overlaps boolean,
+  expert_clause text,
+  keyword_flagged boolean not null,
+  method_used text not null,
+  primary key (run_id, contract, provision)
+);
+
+alter table public.evaluation_runs enable row level security;
+alter table public.evaluation_results enable row level security;
+drop policy if exists "Administrators read evaluation runs" on public.evaluation_runs;
+create policy "Administrators read evaluation runs" on public.evaluation_runs for select to authenticated
+using (public.current_user_role()='administrator');
+drop policy if exists "Administrators read evaluation results" on public.evaluation_results;
+create policy "Administrators read evaluation results" on public.evaluation_results for select to authenticated
+using (public.current_user_role()='administrator');
+
+-- v1.7: provision names match CUAD category names. Existing findings for the
+-- two renamed categories are relabeled. "Assignment / Control" findings are
+-- left as recorded: that category also covered anti-assignment, so they cannot
+-- be relabeled "Change of Control" without changing what was found. Its
+-- playbook rules become "Change of Control" through the upsert below.
+update public.findings set provision='Renewal Term' where provision='Auto Renewal';
+update public.findings set provision='Notice to Terminate Renewal' where provision='Renewal Notice';
+
 insert into public.playbook_rules (id,agreement_type,provision,applicability,standard,method,severity) values
 ('rule-1','Software Subscription','Cap on Liability','R','Cap required; compare basis, amount, and carve-outs','Hybrid','High'),
-('rule-2','Software Subscription','Auto Renewal','M','Monitor renewal term; absence is acceptable','Hybrid','Medium'),
-('rule-3','Software Subscription','Renewal Notice','C','If auto-renewal exists, notice should be 60 days or less','Regex + AI','High'),
+('rule-2','Software Subscription','Renewal Term','M','Monitor renewal term; absence is acceptable','Hybrid','Medium'),
+('rule-3','Software Subscription','Notice to Terminate Renewal','C','If auto-renewal exists, notice should be 60 days or less','Regex + AI','High'),
 ('rule-4','Software Subscription','Governing Law','R','Approved US jurisdiction required','Regex','Medium'),
 ('rule-5','Software Subscription','Exclusivity','M','Any exclusivity requires review','AI','High'),
 ('rule-6','Professional Services','Cap on Liability','R','Cap required and must match approved PSA allocation','Hybrid','High'),
@@ -245,24 +300,29 @@ insert into public.playbook_rules (id,agreement_type,provision,applicability,sta
 ('rule-10','Data Processing Addendum','Cap on Liability','R','Data exposure must match approved DPA standard','Hybrid','High'),
 ('rule-11','Data Processing Addendum','Audit Rights','R','Acceptable audit or assurance mechanism required','AI','High'),
 ('rule-12','Data Processing Addendum','Insurance','C','Cyber coverage required for elevated risk tier','Hybrid','High'),
-('rule-13','Data Processing Addendum','Assignment / Control','C','Processing obligations must survive transfer or control change','AI','High'),
+('rule-13','Data Processing Addendum','Change of Control','C','Processing obligations must survive transfer or control change','AI','High'),
 ('rule-14','Data Processing Addendum','Governing Law','R','DPA or incorporated agreement must provide governing law','Regex','Medium'),
 ('rule-15','Professional Services','Governing Law','M','Disabled stretch metadata - not used by the baseline','Regex','Medium'),
 ('rule-16','Licensing','Cap on Liability','M','Disabled stretch metadata - not used by the baseline','Hybrid','Medium'),
-('rule-17','Licensing','Auto Renewal','M','Disabled stretch metadata - not used by the baseline','Hybrid','Medium'),
-('rule-18','Licensing','Renewal Notice','M','Disabled stretch metadata - not used by the baseline','Hybrid','Medium'),
+('rule-17','Licensing','Renewal Term','M','Disabled stretch metadata - not used by the baseline','Hybrid','Medium'),
+('rule-18','Licensing','Notice to Terminate Renewal','M','Disabled stretch metadata - not used by the baseline','Hybrid','Medium'),
 ('rule-19','Licensing','Governing Law','M','Disabled stretch metadata - not used by the baseline','Regex','Medium'),
 ('rule-20','Licensing','Exclusivity','M','Disabled stretch metadata - not used by the baseline','Hybrid','Medium'),
-('rule-21','Licensing','Assignment / Control','M','Disabled stretch metadata - not used by the baseline','Hybrid','Medium'),
+('rule-21','Licensing','Change of Control','M','Disabled stretch metadata - not used by the baseline','Hybrid','Medium'),
 ('rule-22','Logistics and Freight','Cap on Liability','M','Disabled stretch metadata - not used by the baseline','Hybrid','Medium'),
 ('rule-23','Logistics and Freight','Termination for Convenience','M','Disabled stretch metadata - not used by the baseline','Hybrid','Medium'),
 ('rule-24','Logistics and Freight','Insurance','M','Disabled stretch metadata - not used by the baseline','Hybrid','Medium'),
 ('rule-25','Logistics and Freight','Governing Law','M','Disabled stretch metadata - not used by the baseline','Regex','Medium'),
 ('rule-26','Mutual NDA','Governing Law','M','Disabled stretch metadata - not used by the baseline','Regex','Medium'),
-('rule-27','Mutual NDA','Assignment / Control','M','Disabled stretch metadata - not used by the baseline','Hybrid','Medium'),
+('rule-27','Mutual NDA','Change of Control','M','Disabled stretch metadata - not used by the baseline','Hybrid','Medium'),
 ('rule-28','Other','Cap on Liability','M','Disabled stretch metadata - not used by the baseline','Hybrid','Medium'),
 ('rule-29','Other','Termination for Convenience','M','Disabled stretch metadata - not used by the baseline','Hybrid','Medium'),
 ('rule-30','Other','Insurance','M','Disabled stretch metadata - not used by the baseline','Hybrid','Medium'),
-('rule-31','Other','Assignment / Control','M','Disabled stretch metadata - not used by the baseline','Hybrid','Medium'),
-('rule-32','Other','Governing Law','M','Disabled stretch metadata - not used by the baseline','Regex','Medium')
+('rule-31','Other','Change of Control','M','Disabled stretch metadata - not used by the baseline','Hybrid','Medium'),
+('rule-32','Other','Governing Law','M','Disabled stretch metadata - not used by the baseline','Regex','Medium'),
+('rule-33','Other','Renewal Term','M','Disabled stretch metadata - not used by the baseline','Hybrid','Medium'),
+('rule-34','Other','Notice to Terminate Renewal','M','Disabled stretch metadata - not used by the baseline','Hybrid','Medium'),
+('rule-35','Other','Exclusivity','M','Disabled stretch metadata - not used by the baseline','Hybrid','Medium'),
+('rule-36','Other','Audit Rights','M','Disabled stretch metadata - not used by the baseline','Hybrid','Medium'),
+('rule-37','Other','Warranty Duration','M','Disabled stretch metadata - not used by the baseline','Hybrid','Medium')
 on conflict (id) do update set agreement_type=excluded.agreement_type,provision=excluded.provision,applicability=excluded.applicability,standard=excluded.standard,method=excluded.method,severity=excluded.severity;

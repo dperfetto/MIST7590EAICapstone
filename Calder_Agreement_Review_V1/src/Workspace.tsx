@@ -9,8 +9,10 @@ import {
   ChevronLeft,
   ChevronRight,
   Clock3,
+  Download,
   FileSearch,
   FileText,
+  FlaskConical,
   Gavel,
   HelpCircle,
   LayoutDashboard,
@@ -51,7 +53,9 @@ import { Toaster, toast } from "sonner";
 import {
   analyzeExtractedText,
   extractDocumentText,
+  loadAgreementFile,
   loadAgreementText,
+  rememberAgreementFile,
   rememberAgreementText,
   sourceTextInDocument,
   type AnalysisFinding,
@@ -69,6 +73,18 @@ import {
   roleLabels,
   type UserRole,
 } from "@/lib/data";
+  roleLabels,
+  type AnalysisPath,
+  type EvaluationOutcome,
+  type EvaluationRun,
+  type UserRole,
+} from "@/lib/data";
+import {
+  downloadFile,
+  isPdfFile,
+  renderPdfPages,
+  renderPdfThumbnail,
+} from "@/lib/documentPreview";
 type Agreement = {
   id: string;
   vendor: string;
@@ -77,6 +93,7 @@ type Agreement = {
   neededBy: string;
   filename: string;
   storageKey?: string | null;
+  analysisPath?: AnalysisPath | null;
   status: string;
   playbookVersion: string;
   createdAt: string;
@@ -142,6 +159,7 @@ const navSections: NavSection[] = [
     items: [
       ["reports", "Reporting", BarChart3],
       ["audit", "Audit log", ShieldCheck],
+      ["evaluation", "AI evaluation", FlaskConical],
     ],
   },
   {
@@ -385,6 +403,7 @@ const detectionMethodDefinitions = [
       "A reviewer selects the provision and source text when automation is unavailable or needs correction.",
   },
 ] as const;
+const WORKSPACE_LOAD_TIMEOUT_MS = 15000;
 export default function Workspace() {
   const [data, setData] = useState<Data | null>(null),
     [view, setView] = useState("overview"),
@@ -405,8 +424,33 @@ export default function Workspace() {
     if (!r.ok) throw new Error(j.error);
     setData(j);
   };
+  // The Toaster is not mounted until data loads, so initial-load failures are
+  // shown on the loading screen with a Retry button instead of as a toast.
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const loadWorkspace = async (attempts = 1) => {
+    setLoadError(null);
+    for (let attempt = 1; ; attempt++) {
+      try {
+        await Promise.race([
+          refresh(),
+          new Promise<never>((_, reject) =>
+            setTimeout(
+              () => reject(new Error("The workspace took too long to load.")),
+              WORKSPACE_LOAD_TIMEOUT_MS,
+            ),
+          ),
+        ]);
+        return;
+      } catch (e) {
+        if (attempt >= attempts) {
+          setLoadError(e instanceof Error ? e.message : "Could not load the workspace.");
+          return;
+        }
+      }
+    }
+  };
   useEffect(() => {
-    refresh().catch((e) => toast.error(e.message));
+    void loadWorkspace(2);
   }, []);
   useEffect(() => {
     if (data && !allowedViews[data.me.role].includes(view)) setView("overview");
@@ -458,7 +502,15 @@ export default function Workspace() {
     }
   };
   if (!data)
-    return (
+    return loadError ? (
+      <div className="loading" role="alert">
+        <p className="loading-error-title">We couldn't load your Calder workspace.</p>
+        <p className="loading-error-detail">{loadError}</p>
+        <Button className="loading-retry" onClick={() => void loadWorkspace()}>
+          Retry
+        </Button>
+      </div>
+    ) : (
       <div className="loading">
         <div className="loader" />
         <p>Preparing Calder workspace…</p>
@@ -636,6 +688,8 @@ export default function Workspace() {
           {view === "playbook" && data.me.role === "administrator" && <Playbook rules={data.rules} update={post} />}{" "}
           {view === "reports" && <Reports data={workspaceData} />} {" "}
           {view === "audit" && <AuditLog />}
+          {view === "audit" && <AuditLog events={data.audit} />}
+          {view === "evaluation" && data.me.role === "administrator" && <Evaluation />}
           {view === "profile" && <ProfileAccess me={data.me} users={data.users || []} update={post} />}
         </div>
       </main>
@@ -1029,6 +1083,7 @@ function Intake({
       storageKey: uploadResult.key,
     };
     rememberAgreementText(uploadResult.key, extractedText);
+    rememberAgreementFile(uploadResult.key, file);
     const agreementId = `agr-${crypto.randomUUID().slice(0, 8)}`;
     if (
       await submit({
@@ -1037,6 +1092,8 @@ function Intake({
         status:
           analysisMode === "manual" ? "manual_review_required" : "ready_for_review",
         ...next,
+        // Recorded so the review queue knows how to present the document.
+        analysisPath: analysisMode,
       })
     ) {
       const analysisStarted = performance.now();
@@ -1418,6 +1475,7 @@ function Queue({
             confidence
           </span>
         </div>
+        <AgreementDocument key={`doc-${current.id}`} agreement={current} />
         <div className="finding-stack">
           {fs.length ? (
             fs.map((f) => (
@@ -1553,6 +1611,140 @@ function Queue({
     </div>
   );
 }
+/**
+ * The submitted agreement, shown inside the review queue.
+ * - Manual analysis path: the reviewer is identifying provisions by hand, so
+ *   the whole document is shown in a scrollable panel.
+ * - Automatic / deterministic paths: findings already carry their source
+ *   text, so a small first-page preview is enough; clicking it downloads
+ *   the original file.
+ */
+function AgreementDocument({ agreement }: { agreement: Agreement }) {
+  const fullView = agreement.analysisPath === "manual";
+  const [file, setFile] = useState<Blob | null>(null),
+    [state, setState] = useState<"loading" | "ready" | "missing" | "error">(
+      "loading",
+    ),
+    [thumbnail, setThumbnail] = useState(""),
+    [plainText, setPlainText] = useState("");
+  const pagesRef = useRef<HTMLDivElement>(null);
+  const isPdf = file ? isPdfFile(agreement.filename, file) : false;
+
+  // 1. Find the original file (browser storage in demo, Supabase when hosted).
+  useEffect(() => {
+    let cancelled = false;
+    loadAgreementFile(agreement.storageKey).then((found) => {
+      if (cancelled) return;
+      setFile(found);
+      setState(found ? "ready" : "missing");
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [agreement.storageKey]);
+
+  // 2. Prepare what to show: thumbnail, every PDF page, or plain text.
+  useEffect(() => {
+    if (!file) return;
+    let cancelled = false;
+    const fail = () => !cancelled && setState("error");
+    if (!isPdf) {
+      file.text().then((text) => !cancelled && setPlainText(text), fail);
+    } else if (!fullView) {
+      renderPdfThumbnail(file).then(
+        (image) => !cancelled && setThumbnail(image),
+        fail,
+      );
+    } else if (pagesRef.current) {
+      const container = pagesRef.current;
+      container.replaceChildren();
+      const width = Math.min(container.clientWidth || 720, 900);
+      renderPdfPages(file, container, width, () => cancelled).catch(fail);
+    }
+    return () => {
+      cancelled = true;
+    };
+  }, [file, isPdf, fullView]);
+
+  const download = () => file && downloadFile(file, agreement.filename);
+
+  if (state === "loading")
+    return (
+      <div className="agreement-document is-note" role="status">
+        <Loader2 size={16} className="spin" /> Loading the submitted agreement…
+      </div>
+    );
+  if (state === "missing")
+    return (
+      <div className="agreement-document is-note">
+        <FileText size={16} />
+        <span>
+          The original file for {agreement.filename} isn't available here.
+          Seeded demo agreements have no file, and demo-mode uploads stay in
+          the browser they were submitted from.
+        </span>
+      </div>
+    );
+
+  if (!fullView)
+    return (
+      <div className="agreement-document is-preview">
+        <button
+          type="button"
+          className="document-thumb"
+          onClick={download}
+          aria-label={`Download ${agreement.filename}`}
+          title="Click to download"
+        >
+          {isPdf && thumbnail ? (
+            <img src={thumbnail} alt={`First page of ${agreement.filename}`} />
+          ) : isPdf ? (
+            <FileText size={28} />
+          ) : (
+            <span className="thumb-text">{plainText.slice(0, 400)}</span>
+          )}
+          <span className="thumb-overlay">
+            <Download size={16} />
+          </span>
+        </button>
+        <div>
+          <strong>Submitted agreement</strong>
+          <span>{agreement.filename}</span>
+          <small>Click the preview to download the original file.</small>
+        </div>
+      </div>
+    );
+
+  return (
+    <section className="agreement-document is-full" aria-label="Submitted agreement">
+      <header>
+        <div>
+          <strong>Submitted agreement</strong>
+          <span>
+            {agreement.filename} · manual review path, so the full document is
+            shown
+          </span>
+        </div>
+        <Button variant="outline" size="sm" onClick={download}>
+          <Download size={15} /> Download
+        </Button>
+      </header>
+      {state === "error" ? (
+        <p className="document-error">
+          This document couldn't be displayed in the browser. Use Download to
+          open it instead.
+        </p>
+      ) : isPdf ? (
+        <div className="document-pages" ref={pagesRef} tabIndex={0} />
+      ) : (
+        <pre className="document-pages document-text" tabIndex={0}>
+          {plainText}
+        </pre>
+      )}
+    </section>
+  );
+}
+
 function ManualFinding({
   agreement,
   submit,
@@ -1897,6 +2089,266 @@ function Playbook({
           </span>
         </div>
       </div>
+    </>
+  );
+}
+const outcomeLabels: Record<EvaluationOutcome, string> = {
+  found: "Found",
+  missed: "Missed",
+  wrong_flag: "Wrong flag",
+  correctly_silent: "Correctly silent",
+};
+const outcomeTone: Record<EvaluationOutcome, string> = {
+  found: "green-tone",
+  missed: "red-tone",
+  wrong_flag: "amber-tone",
+  correctly_silent: "",
+};
+const share = (n: number, d: number) =>
+  d ? `${n} of ${d} (${Math.round((n / d) * 100)}%)` : "n/a";
+// Same rule of thumb as evaluation/build_ai_check_set_report.py.
+function evaluationReading(found: number, labeled: number, wrong: number, flagged: number) {
+  if (labeled < 5) return "Too few labeled examples to judge";
+  const recall = found / labeled;
+  const falseRate = flagged ? wrong / flagged : 0;
+  if (recall >= 0.8 && falseRate <= 0.2) return "Reliable";
+  if (recall >= 0.8) return "Finds most, but over-flags";
+  if (falseRate <= 0.2) return "Precise, but misses often";
+  return "Misses often and over-flags";
+}
+/**
+ * Administrator-only view of AI evaluation runs (brief Sections 6.1/6.2):
+ * for each provision, how often Calder finds what the expert labels say is
+ * there, and how often its flags are wrong. No overall accuracy is shown.
+ */
+function Evaluation() {
+  const [runs, setRuns] = useState<EvaluationRun[] | null>(null),
+    [error, setError] = useState(""),
+    [runId, setRunId] = useState(""),
+    [provision, setProvision] = useState<string | null>(null),
+    [outcome, setOutcome] = useState<"all" | EvaluationOutcome>("all");
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/evaluations")
+      .then(async (r) => {
+        const j = await r.json();
+        if (!r.ok) throw new Error(j.error || "Could not load evaluation results.");
+        return j as EvaluationRun[];
+      })
+      .then((loaded) => {
+        if (cancelled) return;
+        setRuns(loaded);
+        setRunId(loaded[0]?.id ?? "");
+      })
+      .catch((e) => !cancelled && setError(e.message));
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+  const run = runs?.find((r) => r.id === runId);
+  const categories = useMemo(() => {
+    if (!run) return [];
+    const names = [...new Set(run.results.map((r) => r.provision))];
+    return names.map((name) => {
+      const rows = run.results.filter((r) => r.provision === name);
+      const labeled = rows.filter((r) => r.expertPresent).length;
+      const flagged = rows.filter((r) => r.calderFlagged).length;
+      const found = rows.filter((r) => r.outcome === "found").length;
+      const wrong = rows.filter((r) => r.outcome === "wrong_flag").length;
+      const kwFlagged = rows.filter((r) => r.keywordFlagged).length;
+      const kwFound = rows.filter((r) => r.keywordFlagged && r.expertPresent).length;
+      return {
+        name,
+        labeled,
+        flagged,
+        found,
+        wrong,
+        kwFlagged,
+        kwFound,
+        kwWrong: kwFlagged - kwFound,
+        reading: evaluationReading(found, labeled, wrong, flagged),
+      };
+    });
+  }, [run]);
+  if (error)
+    return (
+      <Card>
+        <CardContent className="evaluation-empty" role="alert">
+          {error}
+        </CardContent>
+      </Card>
+    );
+  if (!runs)
+    return (
+      <div className="loading">
+        <div className="loader" />
+        <p>Loading evaluation results…</p>
+      </div>
+    );
+  if (!run)
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>No evaluation results yet</CardTitle>
+          <p>
+            Results come from the offline check set in{" "}
+            <code>evaluation/run_ai_check_set.mjs</code>. Build the report with{" "}
+            <code>--sql</code>, then paste the generated SQL file into the Supabase
+            SQL Editor. Demo mode has no evaluation results.
+          </p>
+        </CardHeader>
+      </Card>
+    );
+  const detail = run.results.filter(
+    (r) =>
+      r.provision === provision &&
+      (outcome === "all" ? r.outcome !== "correctly_silent" : r.outcome === outcome),
+  );
+  return (
+    <>
+      <Card>
+        <CardHeader className="table-tools">
+          <div>
+            <CardTitle>{run.label}</CardTitle>
+            <p>
+              {run.contracts} contracts · {run.aiCalls} AI calls ·{" "}
+              {run.aiFallbacks
+                ? `${run.aiFallbacks} fell back to keyword matching`
+                : "no AI fallbacks"}{" "}
+              · answer key: CUAD expert labels
+            </p>
+          </div>
+          {runs.length > 1 && (
+            <Select
+              value={runId}
+              onValueChange={(id) => {
+                setRunId(id);
+                setProvision(null);
+              }}
+            >
+              <SelectTrigger className="type-filter" aria-label="Evaluation run">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {runs.map((r) => (
+                  <SelectItem key={r.id} value={r.id}>
+                    {r.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+        </CardHeader>
+        <CardContent className="evaluation-table">
+          <div className="evaluation-head">
+            <span>Provision</span>
+            <span>Finds what is there</span>
+            <span>Flags that are wrong</span>
+            <span>Reading</span>
+            <span>Keyword-only (finds / wrong)</span>
+          </div>
+          {categories.map((c) => (
+            <button
+              key={c.name}
+              className={provision === c.name ? "selected" : ""}
+              onClick={() => {
+                setProvision(c.name);
+                setOutcome("all");
+              }}
+            >
+              <b>{c.name}</b>
+              <span data-label="Finds what is there">
+                {share(c.found, c.labeled)}
+                <Progress value={c.labeled ? (c.found / c.labeled) * 100 : 0} />
+              </span>
+              <span data-label="Flags that are wrong">
+                {share(c.wrong, c.flagged)}
+                <Progress
+                  className="wrong"
+                  value={c.flagged ? (c.wrong / c.flagged) * 100 : 0}
+                />
+              </span>
+              <Badge
+                variant="outline"
+                className={
+                  c.reading === "Reliable"
+                    ? "green-tone"
+                    : c.reading.startsWith("Misses often and")
+                      ? "red-tone"
+                      : "amber-tone"
+                }
+              >
+                {c.reading}
+              </Badge>
+              <small data-label="Keyword-only (finds / wrong)">
+                {share(c.kwFound, c.labeled)} / {share(c.kwWrong, c.kwFlagged)}
+              </small>
+            </button>
+          ))}
+          <p className="evaluation-note">
+            Each number is per contract: “finds what is there” is contracts Calder
+            flagged out of contracts the experts labeled; “flags that are wrong” is
+            flagged contracts with no expert label. No single overall accuracy is
+            shown, by design. Select a provision to see each contract.
+          </p>
+        </CardContent>
+      </Card>
+      {provision && (
+        <Card>
+          <CardHeader className="table-tools">
+            <div>
+              <CardTitle>{provision}</CardTitle>
+              <p>Calder's quote beside the expert-labeled clause, per contract</p>
+            </div>
+            <Select
+              value={outcome}
+              onValueChange={(v) => setOutcome(v as typeof outcome)}
+            >
+              <SelectTrigger className="status-filter" aria-label="Filter by outcome">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Found, missed, and wrong flags</SelectItem>
+                {(Object.keys(outcomeLabels) as EvaluationOutcome[]).map((key) => (
+                  <SelectItem key={key} value={key}>
+                    {outcomeLabels[key]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </CardHeader>
+          <CardContent className="evaluation-detail">
+            {detail.length ? (
+              detail.map((r) => (
+                <details key={r.contract}>
+                  <summary>
+                    <Badge variant="outline" className={outcomeTone[r.outcome]}>
+                      {outcomeLabels[r.outcome]}
+                    </Badge>
+                    <span>{r.contract}</span>
+                    {r.confidence != null && <small>{r.confidence}% confidence</small>}
+                    {r.quoteOverlaps === false && (
+                      <small className="evaluation-warn">quotes a different clause</small>
+                    )}
+                  </summary>
+                  <div className="evaluation-quotes">
+                    <div>
+                      <strong>Calder quote</strong>
+                      <p>{r.calderQuote || "No finding"}</p>
+                    </div>
+                    <div>
+                      <strong>Expert-labeled clause</strong>
+                      <p>{r.expertClause || "Labeled absent"}</p>
+                    </div>
+                  </div>
+                </details>
+              ))
+            ) : (
+              <p className="evaluation-note">No contracts with this outcome.</p>
+            )}
+          </CardContent>
+        </Card>
+      )}
     </>
   );
 }

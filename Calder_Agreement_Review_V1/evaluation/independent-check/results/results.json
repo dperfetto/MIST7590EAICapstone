@@ -25,7 +25,7 @@
     {
       "document": "bonterms-cloud-terms",
       "agreementType": "Software Subscription",
-      "provision": "Renewal Notice",
+      "provision": "Notice to Terminate Renewal",
       "editType": "shorten-notice-period",
       "expectedBefore": true,
       "detectedBefore": false,
@@ -41,7 +41,7 @@
     {
       "document": "commonpaper-csa",
       "agreementType": "Software Subscription",
-      "provision": "Auto Renewal",
+      "provision": "Renewal Term",
       "editType": "remove-protection",
       "expectedBefore": true,
       "detectedBefore": true,
@@ -153,18 +153,18 @@
     {
       "document": "commonpaper-mutual-nda",
       "agreementType": "Mutual NDA",
-      "provision": "Assignment / Control",
-      "editType": "insert-unusual-clause",
+      "provision": "Change of Control",
+      "editType": "remove-protection",
       "expectedBefore": true,
       "detectedBefore": true,
       "beforeCorrect": true,
-      "expectedAfter": true,
-      "detectedAfter": true,
+      "expectedAfter": false,
+      "detectedAfter": false,
       "afterCorrect": true,
-      "beforeConfidence": 91,
-      "afterConfidence": 73,
-      "beforeSourceText": "Neither party has an obligation under this MNDA to disclose Confidential Information to the other or proceed with any proposed transaction. Neither party may assign this MNDA without the prior written consent of the other party, except that either party may assign this MNDA in connection with a merger, reorganization, acquisition or other transfer of all or substantially all its assets or voting securities. Any assignment in violation of this Section is null and void.",
-      "afterSourceText": "Upon a breach of this MNDA, the Disclosing Party is entitled to seek appropriate equitable relief, including an injunction, in addition to its other remedies. Neither party has an obligation under this MNDA to disclose Confidential Information to the other or proceed with any proposed transaction. Either party may freely assign this MNDA, in whole or in part, to any third party, including a direct competitor of the other party, without notice to or consent from the other party, and no assignment under this Section releases the assigning party from its obligations."
+      "beforeConfidence": 73,
+      "afterConfidence": null,
+      "beforeSourceText": "Upon a breach of this MNDA, the Disclosing Party is entitled to seek appropriate equitable relief, including an injunction, in addition to its other remedies. Neither party has an obligation under this MNDA to disclose Confidential Information to the other or proceed with any proposed transaction. Neither party may assign this MNDA without the prior written consent of the other party, except that either party may assign this MNDA in connection with a merger, reorganization, acquisition or other transfer of all or substantially all its assets or voting securities.",
+      "afterSourceText": null
     },
     {
       "document": "bonterms-dpa",
