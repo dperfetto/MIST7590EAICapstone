@@ -640,6 +640,81 @@ const camelAudit = (r: any): Audit => ({
   createdAt: r.created_at,
 });
 
+export type AuditPage = {
+  events: Audit[];
+  total: number;
+  page: number;
+  pageSize: number;
+};
+
+export async function getAuditPage(
+  page = 1,
+  pageSize = 25,
+): Promise<AuditPage> {
+  const safePage = Math.max(1, Math.floor(page));
+  const safePageSize = Math.min(100, Math.max(1, Math.floor(pageSize)));
+  const from = (safePage - 1) * safePageSize;
+  const to = from + safePageSize - 1;
+
+  if (!supabase) {
+    const all = [...localRead().audit].sort(
+      (a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+    );
+    return {
+      events: all.slice(from, to + 1),
+      total: all.length,
+      page: safePage,
+      pageSize: safePageSize,
+    };
+  }
+
+  await currentUser();
+  const { data, error, count } = await supabase
+    .from("audit_events")
+    .select("*", { count: "exact" })
+    .order("created_at", { ascending: false })
+    .range(from, to);
+
+  if (error) throw error;
+
+  return {
+    events: (data || []).map(camelAudit),
+    total: count ?? 0,
+    page: safePage,
+    pageSize: safePageSize,
+  };
+}
+
+export async function getAllAuditEvents(): Promise<Audit[]> {
+  if (!supabase) {
+    return [...localRead().audit].sort(
+      (a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+    );
+  }
+
+  await currentUser();
+  const batchSize = 1000;
+  const rows: any[] = [];
+
+  for (let from = 0; ; from += batchSize) {
+    const { data, error } = await supabase
+      .from("audit_events")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .range(from, from + batchSize - 1);
+
+    if (error) throw error;
+
+    const batch = data || [];
+    rows.push(...batch);
+    if (batch.length < batchSize) break;
+  }
+
+  return rows.map(camelAudit);
+}
+
 async function currentUser() {
   const { data, error } = await supabase!.auth.getUser();
   if (error || !data.user) throw new Error("Please sign in to continue.");
