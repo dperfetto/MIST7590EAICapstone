@@ -71,9 +71,6 @@ import {
   getAllAuditEvents,
   getAuditPage,
   roleLabels,
-  type UserRole,
-} from "@/lib/data";
-  roleLabels,
   type AnalysisPath,
   type EvaluationOutcome,
   type EvaluationRun,
@@ -688,7 +685,6 @@ export default function Workspace() {
           {view === "playbook" && data.me.role === "administrator" && <Playbook rules={data.rules} update={post} />}{" "}
           {view === "reports" && <Reports data={workspaceData} />} {" "}
           {view === "audit" && <AuditLog />}
-          {view === "audit" && <AuditLog events={data.audit} />}
           {view === "evaluation" && data.me.role === "administrator" && <Evaluation />}
           {view === "profile" && <ProfileAccess me={data.me} users={data.users || []} update={post} />}
         </div>
