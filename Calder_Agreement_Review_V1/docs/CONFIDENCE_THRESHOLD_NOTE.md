@@ -6,7 +6,7 @@ Calder has actually measured rather than asserted.
 ## 1. Where is the threshold set, and why?
 
 **85.** A finding with confidence below 85 is marked low-confidence in the UI (red risk line,
-counted in the "verify confidence" metric) — see `src/Workspace.tsx:405,508,906,952`. This is not
+counted in the "verify confidence" metric) — see the `< 85` checks in `src/pages/Overview.tsx` and `src/pages/review-queue/Queue.tsx`. This is not
 a round number chosen by feel; it falls out of how Calder's two analysis paths actually score
 evidence:
 
