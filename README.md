@@ -239,10 +239,11 @@ Runs the 10 deliberately modified Bonterms/Common Paper agreements in `evaluatio
 
 ```bash
 node --experimental-strip-types evaluation/run_independent_check_ai.mjs
-python3 evaluation/build_independent_check_ai_report.py --out "Calder AI Independent Check.xlsx"
+python3 evaluation/build_independent_check_ai_report.py --out "Calder AI Independent Check.xlsx" \
+  --sql evaluation/independent-check/ai-results/load_results.sql
 ```
 
-Findings are written up in `evaluation/independent-check/RESULTS.md` (section "AI path").
+Findings are written up in `evaluation/independent-check/RESULTS.md` (section "AI path"). To review them in the app, rerun `supabase/schema.sql` (it adds the `independent_check_results` table), then paste `load_results.sql` into the SQL Editor; Administrators see it under **Insights → AI evaluation → Independent check**.
 
 ## Troubleshooting
 

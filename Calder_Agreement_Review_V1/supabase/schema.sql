@@ -279,6 +279,36 @@ drop policy if exists "Administrators read evaluation results" on public.evaluat
 create policy "Administrators read evaluation results" on public.evaluation_results for select to authenticated
 using (public.current_user_role()='administrator');
 
+-- Section 6.3 independent check: deliberately modified standard-form
+-- agreements, each edited provision checked on the original and modified
+-- version. Loaded from evaluation/build_independent_check_ai_report.py --sql.
+alter table public.evaluation_runs add column if not exists kind text not null default 'cuad_check_set'
+  check (kind in ('cuad_check_set','independent_check'));
+
+create table if not exists public.independent_check_results (
+  run_id text not null references public.evaluation_runs(id) on delete cascade,
+  document text not null,
+  agreement_type text not null,
+  provision text not null,
+  edit_type text not null,
+  edit_description text not null,
+  version text not null check (version in ('original','modified')),
+  expected_present boolean not null,
+  ai_flagged boolean not null,
+  correct boolean not null,
+  confidence integer check (confidence is null or confidence between 0 and 100),
+  quote_touches_edit boolean,
+  ai_quote text,
+  keyword_correct boolean,
+  diagnosis text,
+  primary key (run_id, document, provision, version)
+);
+
+alter table public.independent_check_results enable row level security;
+drop policy if exists "Administrators read independent check results" on public.independent_check_results;
+create policy "Administrators read independent check results" on public.independent_check_results for select to authenticated
+using (public.current_user_role()='administrator');
+
 -- v1.7: provision names match CUAD category names. Existing findings for the
 -- two renamed categories are relabeled. "Assignment / Control" findings are
 -- left as recorded: that category also covered anti-assignment, so they cannot

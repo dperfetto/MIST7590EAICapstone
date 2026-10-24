@@ -5,7 +5,11 @@ run_independent_check_ai.mjs) and the team's diagnoses.json, and compares
 each check with the deterministic (keyword) path's committed results.
 
 Usage:
-  python3 evaluation/build_independent_check_ai_report.py --out "Calder AI Independent Check.xlsx"
+  python3 evaluation/build_independent_check_ai_report.py --out "Calder AI Independent Check.xlsx" \
+    --sql evaluation/independent-check/ai-results/load_results.sql
+
+--sql also writes a file to paste into the Supabase SQL Editor, which loads
+the run into the Independent check tab of the app's AI evaluation page.
 
 Requires openpyxl.
 """
@@ -20,6 +24,8 @@ from collections import defaultdict
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Font, PatternFill
 from openpyxl.utils import get_column_letter
+
+from build_ai_check_set_report import sql_literal
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 RESULTS = ROOT / "evaluation" / "independent-check" / "ai-results"
@@ -57,9 +63,51 @@ def sheet(workbook, title, headers, rows, widths, wrap=()):
     return ws
 
 
+def write_sql(run: dict, diagnoses: dict, path: pathlib.Path) -> str:
+    """SQL for the Supabase SQL Editor: replaces this run's rows in one transaction."""
+    run_id = f'{run["runAt"][:10]}-{run["model"]}-independent-check'
+    label = f'Independent check: {run["documents"]} modified agreements, Automatic (AI), {run["model"]}, {run["runAt"][:10]}'
+    notes = (
+        "Bonterms/Common Paper standard-form agreements deliberately modified by the team; "
+        "answer key evaluation/independent-check/labels.json. Each edit is checked on the original and modified version."
+    )
+    lines = [
+        "-- Calder independent check (Section 6.3), AI path. Paste into Supabase SQL Editor and run.",
+        "-- Requires the evaluation tables from supabase/schema.sql.",
+        "begin;",
+        f"delete from public.evaluation_runs where id = {sql_literal(run_id)};",
+        "insert into public.evaluation_runs (id,kind,label,run_at,model,agreement_type,contracts,ai_calls,ai_fallbacks,notes) values ("
+        + ",".join(sql_literal(v) for v in [
+            run_id, "independent_check", label, run["runAt"], run["model"], "Per document",
+            run["documents"], run["aiCalls"], run["aiFallbacks"], notes,
+        ]) + ");",
+    ]
+    values = []
+    for r in run["rows"]:
+        for phase, version in (("before", "original"), ("after", "modified")):
+            correct = r[f"{phase}Correct"]
+            values.append("(" + ",".join(sql_literal(v) for v in [
+                run_id, r["document"], r["agreementType"], r["provision"], r["editType"], r["description"],
+                version, r[f"expected{phase.title()}"], r[f"detected{phase.title()}"], correct,
+                r[f"{phase}Confidence"], r[f"{phase}QuotesEditedText"],
+                (r[f"{phase}Quote"] or "")[:2000] or None,
+                r[f"keyword{phase.title()}Correct"],
+                None if correct else diagnoses.get(f'{r["document"]}|{r["provision"]}|{phase}'),
+            ]) + ")")
+    lines.append(
+        "insert into public.independent_check_results (run_id,document,agreement_type,provision,edit_type,edit_description,version,expected_present,ai_flagged,correct,confidence,quote_touches_edit,ai_quote,keyword_correct,diagnosis) values\n"
+        + ",\n".join(values) + ";"
+    )
+    lines.append("commit;")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    return run_id
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--out", required=True, type=pathlib.Path)
+    parser.add_argument("--sql", type=pathlib.Path, help="Also write a SQL file to load the run into Supabase")
     args = parser.parse_args()
 
     run = json.loads((RESULTS / "results.json").read_text(encoding="utf-8"))
@@ -130,6 +178,9 @@ def main() -> None:
     args.out.parent.mkdir(parents=True, exist_ok=True)
     workbook.save(args.out)
     print(f"Wrote {args.out}")
+    if args.sql:
+        run_id = write_sql(run, diagnoses, args.sql)
+        print(f"Wrote {args.sql} (run {run_id}, {args.sql.stat().st_size // 1024} KB)")
     for row in summary:
         print(f"  {row[0]:26} edits {row[1]:2}  AI {row[2]:9}  keyword {row[3]}")
 
