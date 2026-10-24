@@ -366,7 +366,7 @@ test("reviewers can see the submitted document in the review queue", () => {
 });
 
 test("AI evaluation results are readable by administrators only and never written by the app", () => {
-  for (const table of ["evaluation_runs", "evaluation_results"]) {
+  for (const table of ["evaluation_runs", "evaluation_results", "independent_check_results"]) {
     assert.match(schema, new RegExp(`alter table public\\.${table} enable row level security`));
     assert.match(
       schema,
@@ -375,7 +375,13 @@ test("AI evaluation results are readable by administrators only and never writte
     assert.doesNotMatch(schema, new RegExp(`on public\\.${table} for (insert|update|delete|all)`));
   }
   assert.doesNotMatch(data, /from\("evaluation_(runs|results)"\)\s*\.(insert|update|upsert|delete)/);
-  assert.match(data, /evaluation_results[\s\S]*?\.range\(from, from \+ 999\)/);
+  assert.doesNotMatch(data, /from\("independent_check_results"\)\s*\.(insert|update|upsert|delete)/);
+  assert.match(schema, /kind in \('cuad_check_set','independent_check'\)/);
+  assert.match(workspace, /<TabsTrigger value="independent">Independent check<\/TabsTrigger>/);
+  assert.match(workspace, /function IndependentCheckEvaluation/);
+  assert.match(data, /const readAll = [\s\S]*?\.range\(from, from \+ 999\)/);
+  assert.match(data, /readAll\("evaluation_results"/);
+  assert.match(data, /readAll\("independent_check_results"/);
   assert.match(workspace, /\["evaluation", "AI evaluation", FlaskConical\]/);
   assert.match(workspace, /view === "evaluation" && data\.me\.role === "administrator" && <Evaluation \/>/);
   for (const role of ["submitter", "reviewer", "approver"])

@@ -1798,11 +1798,50 @@ body {
   max-height: 260px;
   overflow: auto;
 }
+.independent-table .evaluation-head,
+.independent-table > .independent-row {
+  grid-template-columns: 1.4fr 0.5fr 1.2fr 1.2fr;
+}
+.independent-table > .independent-row {
+  display: grid;
+  gap: 14px;
+  align-items: center;
+  border-top: 1px solid #edf0f4;
+  padding: 12px 8px;
+  font-size: 0.85rem;
+}
+.independent-table > .independent-row > span {
+  display: grid;
+  gap: 6px;
+}
+.independent-table .keyword [data-slot="progress-indicator"] {
+  background: #7d8997;
+}
+.evaluation-edit {
+  margin: 10px 0 0;
+  font-size: 0.8rem;
+  color: #536173;
+}
+.evaluation-quotes small {
+  display: block;
+  margin-top: 4px;
+  color: #7a8798;
+  font-size: 0.7rem;
+}
+.evaluation-quotes .evaluation-diagnosis {
+  margin-top: 8px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: #fff4e5;
+  color: #6b4400;
+  max-height: none;
+}
 @media (max-width: 780px) {
   .evaluation-head {
     display: none;
   }
   .evaluation-table > button,
+  .independent-table > .independent-row,
   .evaluation-quotes {
     grid-template-columns: 1fr;
   }

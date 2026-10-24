@@ -137,6 +137,61 @@ about, while a system whose failure modes are this legible can be scoped around 
 defined-term agreements for manual review by default, or tighten the Exclusivity and "for any
 reason"-style candidate phrases).
 
+## AI path (Automatic, gpt-5-mini)
+
+The sections above score the deterministic path. On 2026-10-24 the same 10 documents, edits, and
+answer key were run through Calder's Automatic (AI) path with `evaluation/run_independent_check_ai.mjs`
+(each file submitted as a TXT upload with its own agreement type; 20 AI calls, no fallbacks).
+Per-check results are in `ai-results/results.json`, and the miss-by-miss diagnosis is in
+`ai-results/diagnoses.json`.
+
+**17 of 24 checks correct, against 16 of 24 for the deterministic path.** The AI did not simply
+do better: it failed on different checks.
+
+| Edit type | Edits | AI correct | Deterministic correct |
+|---|---|---|---|
+| Remove a protection | 7 | 9 of 14 | 11 of 14 |
+| Insert an unusual clause | 3 | 6 of 6 | 5 of 6 |
+| Shorten a notice period | 1 | 2 of 2 | 0 of 2 |
+| Change a liability cap | 1 | 0 of 2 | 0 of 2 |
+
+**Where the AI helped.** It caught the Bonterms Cloud Terms renewal-notice clause before and after
+shortening, quoting the edited clause both times; phrase matching never found it. It also correctly
+stayed silent on the unmodified Common Paper software license's exclusive license grant, which
+phrase matching flagged as Exclusivity.
+
+**Where it dropped.** The AI got 5 of 14 remove-protection checks wrong, compared with 3 for the
+deterministic path. Its 7 misses have four causes:
+
+1. **Correct finding, dropped by the quote check (3 misses).** The AI found the Bonterms Cloud
+   Terms General Cap (original and modified) and the Bonterms DPA customer audit right. Calder
+   then discarded them because each quote did not match the document text exactly. Two quotes
+   left out the files' Markdown `**bold**` markers (`(an “Audit”)` versus `(an “**Audit**”)`).
+   The third joined two separate clauses into one quote. The Markdown part is an artifact of the
+   test files, which a PDF or plain-text upload would not have. But the exact-match rule is a real
+   weakness: a correct finding is lost silently, with nothing shown to the reviewer.
+2. **Defined-term drafting (1 miss).** The Bonterms Mutual NDA says only "The Governing Law
+   governs this NDA"; the state is a Cover Page variable. The AI returned no findings for the
+   original at all. This is the same modular-drafting gap that defeats phrase matching (cause 1
+   above).
+3. **Change-of-control carve-outs (1 miss).** In the Common Paper Mutual NDA, assignment is
+   allowed "in connection with a merger, reorganization, acquisition or other transfer of all or
+   substantially all its assets." The AI did not treat this as change of control. This is the
+   same pattern behind Change of Control's 53% recall in the 40-contract CUAD check set.
+4. **Flags that survive a removal (2 misses).** After the Bonterms PSA convenience-termination
+   clause was removed, the AI flagged 11.1 "either party may terminate this Agreement for any or
+   no reason" (when no SOW is in effect). That arguably is a convenience right, so the answer key
+   may be too strict here. After the Common Paper DPA audit clause was removed, the AI flagged
+   Provider's report sharing, which is not an audit right. Phrase matching made the same mistake.
+
+**Does performance hold?** Partially. On the 5 edits that change or insert wording, the AI got 8
+of 10 checks right. The 2 misses were the dropped General Cap quotes, and all 5 flags it raised
+quoted the edited clause. On
+standard-form agreements built from defined terms and cover-page variables, it dropped. The
+strict quote check also silently cost three correct findings. A drop is the finding: Calder
+should not treat "no finding" on a modular standard-form agreement as evidence that a provision
+is absent, whichever path produced it.
+
 ## Attribution
 
 Source documents are CC BY 4.0: Bonterms (bonterms.com, github.com/Bonterms) and Common Paper

@@ -1,0 +1,12 @@
+{
+  "note": "Team diagnosis of each AI miss in the Section 6.3 independent check (gpt-5-mini run of 2026-10-24). Keyed document|provision|check.",
+  "diagnoses": {
+    "bonterms-cloud-terms|Cap on Liability|before": "Found, then dropped. The AI returned 16.1 'General Cap', but quoted it without the file's markdown bold markers (**16.1.** ... **Each party's ...**), so Calder's exact-quote check rejected it. Test-format artifact plus a strict quote check.",
+    "bonterms-cloud-terms|Cap on Liability|after": "Found, then dropped. The AI joined 16.1 and 16.5 into one quote; text spanning two separate clauses is not found verbatim, so the quote check rejected it.",
+    "bonterms-mutual-nda|Governing Law|before": "Missed. The clause reads 'The Governing Law governs this NDA': governing law is a defined term whose value sits on the Cover Page, and the AI returned no findings at all for the original.",
+    "bonterms-psa|Termination for Convenience|after": "Wrong flag, but arguably right. After 11.2(b) was removed, 11.1 still says 'either party may terminate this Agreement for any or no reason' when no SOW Term is in effect. That is a convenience termination right; the answer key may be too strict.",
+    "commonpaper-mutual-nda|Change of Control|before": "Missed. The original only lets a party assign 'in connection with a merger, reorganization, acquisition or other transfer of all or substantially all its assets'. The AI did not treat this carve-out as change of control, the same pattern behind Change of Control's 53% in the CUAD check set.",
+    "bonterms-dpa|Audit Rights|before": "Found, then dropped. The AI quoted the 9.3 customer audit right accurately except for markdown: '(an “Audit”)' versus the file's '(an “**Audit**”)'. The quote check rejected it.",
+    "commonpaper-dpa|Audit Rights|after": "Wrong flag. After the audit clause was removed, the AI flagged Provider's promise to share 'a summary copy of its then-current Report so that Customer can verify' compliance. That is report sharing, not a customer audit right. Keyword matching made the same mistake."
+  }
+}

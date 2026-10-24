@@ -233,6 +233,18 @@ python3 evaluation/build_ai_check_set_report.py \
 
 The Excel file reports, per provision, how often Calder finds what is labeled there and how often its flags are wrong (no overall accuracy, by design), with a sheet of misses and wrong flags for spot-checking. To view a run in the app, paste `load_results.sql` into the Supabase **SQL Editor** and run it; Administrators then see it under **Insights → AI evaluation**. Loading the same run again replaces it.
 
+### Independent check on the AI path (brief Section 6.3)
+
+Runs the 10 deliberately modified Bonterms/Common Paper agreements in `evaluation/independent-check/` through the same Automatic (AI) pipeline (shared in `evaluation/ai_path.mjs`), scored against `labels.json` and compared with the deterministic results. About 20 OpenAI calls; responses are cached.
+
+```bash
+node --experimental-strip-types evaluation/run_independent_check_ai.mjs
+python3 evaluation/build_independent_check_ai_report.py --out "Calder AI Independent Check.xlsx" \
+  --sql evaluation/independent-check/ai-results/load_results.sql
+```
+
+Findings are written up in `evaluation/independent-check/RESULTS.md` (section "AI path"). To review them in the app, rerun `supabase/schema.sql` (it adds the `independent_check_results` table), then paste `load_results.sql` into the SQL Editor; Administrators see it under **Insights → AI evaluation → Independent check**.
+
 ## Troubleshooting
 
 - **Safari: "This browser could not extract the PDF text"**: try the same file in Chrome or Edge first. A console error like `Worker task was terminated` is a PDF.js/Safari Web Worker issue, not your file; it can happen on a valid PDF, especially if the tab was backgrounded during upload.

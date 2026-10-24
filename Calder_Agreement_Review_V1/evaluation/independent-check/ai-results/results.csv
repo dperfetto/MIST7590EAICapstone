@@ -1,0 +1,13 @@
+document,provision,editType,expectedBefore,detectedBefore,beforeCorrect,expectedAfter,detectedAfter,afterCorrect,beforeQuotesEditedText,afterQuotesEditedText,keywordBeforeCorrect,keywordAfterCorrect
+bonterms-cloud-terms,Cap on Liability,change-liability-cap,true,false,false,true,false,false,,,false,false
+bonterms-cloud-terms,Notice to Terminate Renewal,shorten-notice-period,true,true,true,true,true,true,true,true,false,false
+commonpaper-csa,Renewal Term,remove-protection,true,true,true,false,false,true,true,,true,true
+commonpaper-software-license,Exclusivity,insert-unusual-clause,false,false,true,true,true,true,,true,false,true
+bonterms-mutual-nda,Governing Law,remove-protection,true,false,false,false,false,true,,,true,true
+bonterms-sla,Cap on Liability,insert-unusual-clause,false,false,true,true,true,true,,true,true,true
+bonterms-psa,Termination for Convenience,remove-protection,true,true,true,false,true,false,true,false,true,false
+commonpaper-psa,Insurance,remove-protection,true,true,true,false,false,true,true,,true,true
+commonpaper-psa,Warranty Duration,insert-unusual-clause,false,false,true,true,true,true,,true,true,true
+commonpaper-mutual-nda,Change of Control,remove-protection,true,false,false,false,false,true,,,true,true
+bonterms-dpa,Audit Rights,remove-protection,true,false,false,false,false,true,,,true,false
+commonpaper-dpa,Audit Rights,remove-protection,true,true,true,false,true,false,true,true,true,false

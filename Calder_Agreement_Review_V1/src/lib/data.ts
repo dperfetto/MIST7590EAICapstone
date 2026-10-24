@@ -95,8 +95,25 @@ export type EvaluationResult = {
   keywordFlagged: boolean;
   methodUsed: string;
 };
+export type IndependentCheckResult = {
+  document: string;
+  agreementType: string;
+  provision: string;
+  editType: string;
+  editDescription: string;
+  version: "original" | "modified";
+  expectedPresent: boolean;
+  aiFlagged: boolean;
+  correct: boolean;
+  confidence: number | null;
+  quoteTouchesEdit: boolean | null;
+  aiQuote: string | null;
+  keywordCorrect: boolean | null;
+  diagnosis: string | null;
+};
 export type EvaluationRun = {
   id: string;
+  kind: "cuad_check_set" | "independent_check";
   label: string;
   runAt: string;
   model: string;
@@ -106,6 +123,7 @@ export type EvaluationRun = {
   aiFallbacks: number;
   notes: string;
   results: EvaluationResult[];
+  checks: IndependentCheckResult[];
 };
 export type Data = {
   me: { name: string; email: string; role: UserRole };
@@ -731,22 +749,33 @@ export async function getEvaluations(): Promise<EvaluationRun[]> {
     .order("run_at", { ascending: false });
   if (runs.error) throw runs.error;
   // Supabase caps a request at 1,000 rows by default, so page through.
-  const rows: any[] = [];
-  for (let from = 0; ; from += 1000) {
-    const page = await supabase
-      .from("evaluation_results")
-      .select("*")
-      .order("run_id")
-      .order("contract")
-      .order("provision")
-      .range(from, from + 999);
-    if (page.error) throw page.error;
-    rows.push(...(page.data || []));
-    if ((page.data || []).length < 1000) break;
-  }
-  const results = { data: rows };
+  const readAll = async (table: string, order: string[]) => {
+    const rows: any[] = [];
+    for (let from = 0; ; from += 1000) {
+      let query = supabase!.from(table).select("*");
+      for (const column of order) query = query.order(column);
+      const page = await query.range(from, from + 999);
+      if (page.error) throw page.error;
+      rows.push(...(page.data || []));
+      if ((page.data || []).length < 1000) break;
+    }
+    return rows;
+  };
+  const [resultRows, checkRows] = await Promise.all([
+    readAll("evaluation_results", ["run_id", "contract", "provision"]),
+    // Until schema.sql is rerun this table does not exist; show no checks
+    // rather than failing the whole page.
+    readAll("independent_check_results", ["run_id", "document", "provision", "version"]).catch(
+      (error) => {
+        if (error?.code === "PGRST205" || error?.code === "42P01") return [];
+        throw error;
+      },
+    ),
+  ]);
+  const results = { data: resultRows };
   return (runs.data || []).map((r: any) => ({
     id: r.id,
+    kind: r.kind === "independent_check" ? "independent_check" : "cuad_check_set",
     label: r.label,
     runAt: r.run_at,
     model: r.model,
@@ -769,6 +798,24 @@ export async function getEvaluations(): Promise<EvaluationRun[]> {
         expertClause: row.expert_clause,
         keywordFlagged: row.keyword_flagged,
         methodUsed: row.method_used,
+      })),
+    checks: checkRows
+      .filter((row: any) => row.run_id === r.id)
+      .map((row: any) => ({
+        document: row.document,
+        agreementType: row.agreement_type,
+        provision: row.provision,
+        editType: row.edit_type,
+        editDescription: row.edit_description,
+        version: row.version,
+        expectedPresent: row.expected_present,
+        aiFlagged: row.ai_flagged,
+        correct: row.correct,
+        confidence: row.confidence,
+        quoteTouchesEdit: row.quote_touches_edit,
+        aiQuote: row.ai_quote,
+        keywordCorrect: row.keyword_correct,
+        diagnosis: row.diagnosis,
       })),
   }));
 }
