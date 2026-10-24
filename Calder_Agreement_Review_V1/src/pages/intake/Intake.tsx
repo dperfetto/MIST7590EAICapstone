@@ -1,6 +1,6 @@
 import { type Rule } from "@/workspace/types";
 import { useState } from "react";
-import { type AnalysisFinding, type AnalysisMode, analyzeExtractedText, extractDocumentText, rememberAgreementFile, rememberAgreementText } from "@/lib/analyze";
+import { type AnalysisMode } from "@/lib/analyze";
 import { toast } from "sonner";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -8,28 +8,32 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { agreementTypes } from "@/lib/model";
 import { FileSearch, Loader2, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { BulkIntake } from "@/pages/intake/BulkIntake";
+import { type Submit, businessUnits, submitAgreement } from "@/pages/intake/submitAgreement";
+
+const emptyForm = {
+  vendor: "",
+  agreementType: "Software Subscription",
+  businessUnit: "Corporate IT",
+  neededBy: "",
+};
 
 export function Intake({
   submit,
   busy,
   rules,
 }: {
-  submit: (b: Record<string, unknown>) => Promise<boolean>;
+  submit: Submit;
   busy: boolean;
   rules: Rule[];
 }) {
-  const [form, setForm] = useState({
-      vendor: "",
-      agreementType: "Software Subscription",
-      businessUnit: "Corporate IT",
-      neededBy: "",
-      filename: "",
-      storageKey: "",
-    }),
+  const [form, setForm] = useState(emptyForm),
     [file, setFile] = useState<File | null>(null),
     [analysisMode, setAnalysisMode] = useState<AnalysisMode>("automatic"),
     [analysisStatus, setAnalysisStatus] = useState(""),
-    [submitting, setSubmitting] = useState(false);
+    [submitting, setSubmitting] = useState(false),
+    [intakeMode, setIntakeMode] = useState<"single" | "bulk">("single"),
+    [bulkRunning, setBulkRunning] = useState(false);
   const send = async (e: React.FormEvent) => {
     e.preventDefault();
     if (submitting) return;
@@ -45,122 +49,57 @@ export function Intake({
       toast.error("Choose a searchable PDF or TXT file before submitting.");
       return;
     }
-    setAnalysisStatus("Preparing document…");
-    let next = { ...form };
-    let extractedText = "";
-    const uploadSelectedFile = async () => {
-      const fd = new FormData();
-      fd.append("file", file);
-      const response = await fetch("/api/workspace", {
-        method: "PUT",
-        body: fd,
-      });
-      const result = await response.json();
-      if (!response.ok)
-        throw new Error(
-          typeof result.error === "string" ? result.error : "Upload failed.",
-        );
-      return result as { filename: string; key: string };
-    };
-    try {
-      setAnalysisStatus("Validating searchable document text…");
-      extractedText = await extractDocumentText(file);
-    } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : "The document could not be read.";
-      setAnalysisStatus(`${message} Submission was not stored.`);
-      toast.error(`${message} Submission was not stored.`);
+    const outcome = await submitAgreement({
+      file,
+      details: form,
+      analysisMode,
+      rules,
+      submit,
+      onStatus: setAnalysisStatus,
+    });
+    setAnalysisStatus(outcome.message);
+    if (!outcome.ok) {
+      toast.error(outcome.message);
       return;
     }
-    let uploadResult: { filename: string; key: string };
-    try {
-      uploadResult = await uploadSelectedFile();
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Upload failed.";
-      setAnalysisStatus(`${message} Submission was not stored.`);
-      toast.error(`${message} Submission was not stored.`);
-      return;
-    }
-    next = {
-      ...next,
-      filename: uploadResult.filename,
-      storageKey: uploadResult.key,
-    };
-    rememberAgreementText(uploadResult.key, extractedText);
-    rememberAgreementFile(uploadResult.key, file);
-    const agreementId = `agr-${crypto.randomUUID().slice(0, 8)}`;
-    if (
-      await submit({
-        action: "create_agreement",
-        id: agreementId,
-        status:
-          analysisMode === "manual" ? "manual_review_required" : "ready_for_review",
-        ...next,
-        // Recorded so the review queue knows how to present the document.
-        analysisPath: analysisMode,
-      })
-    ) {
-      const analysisStarted = performance.now();
-      let result: {
-        method: "manual" | "ai" | "deterministic";
-        findings: AnalysisFinding[];
-        notice: string;
-      };
-      try {
-        setAnalysisStatus(
-          analysisMode === "automatic"
-            ? "Agreement stored. Trying hosted extraction, with deterministic fallback…"
-            : analysisMode === "deterministic"
-              ? "Agreement stored. Running deterministic analysis…"
-              : "Agreement stored. Opening the manual review path…",
-        );
-        result = await analyzeExtractedText(
-          extractedText,
-          form.agreementType,
-          analysisMode,
-          rules.filter((rule) => rule.agreementType === form.agreementType),
-        );
-      } catch {
-        result = {
-          method: "manual",
-          findings: [],
-          notice:
-            "Agreement stored. Automated analysis failed, so guided manual review remains available.",
-        };
-      }
-      const analysisDurationMs = Math.round(performance.now() - analysisStarted);
-      await submit({
-        action: "add_analysis_findings",
-        agreementId,
-        analysisMethod: result.method,
-        analysisDurationMs,
-        findings: result.findings,
-      });
-      setAnalysisStatus(result.notice);
-      toast.success(result.notice);
-      setForm({
-        vendor: "",
-        agreementType: "Software Subscription",
-        businessUnit: "Corporate IT",
-        neededBy: "",
-        filename: "",
-        storageKey: "",
-      });
-      setFile(null);
-    }
+    toast.success(outcome.message);
+    setForm(emptyForm);
+    setFile(null);
   };
   return (
     <div className="form-layout">
       <section>
         <div className="section-title">
-          <h2>Submit a vendor agreement</h2>
+          <h2>{intakeMode === "single" ? "Submit a vendor agreement" : "Submit several agreements"}</h2>
           <p>
-            Provide the minimum information needed to route and review this
-            agreement.
+            {intakeMode === "single"
+              ? "Provide the minimum information needed to route and review this agreement."
+              : "Set the details once for every file, then change any file that differs."}
           </p>
         </div>
+        <div className="queue-tabs intake-tabs" role="tablist" aria-label="Intake mode">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={intakeMode === "single"}
+            disabled={submitting || bulkRunning}
+            onClick={() => setIntakeMode("single")}
+          >
+            One agreement
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={intakeMode === "bulk"}
+            disabled={submitting || bulkRunning}
+            onClick={() => setIntakeMode("bulk")}
+          >
+            Bulk intake
+          </button>
+        </div>
+        {intakeMode === "bulk" ? (
+          <BulkIntake submit={submit} rules={rules} onRunningChange={setBulkRunning} />
+        ) : (
         <form className="intake-form" onSubmit={send}>
           <div>
             <Label>Vendor</Label>
@@ -200,10 +139,11 @@ export function Intake({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Corporate IT">Corporate IT</SelectItem>
-                  <SelectItem value="Operations">Operations</SelectItem>
-                  <SelectItem value="Finance">Finance</SelectItem>
-                  <SelectItem value="Distribution">Distribution</SelectItem>
+                  {businessUnits.map((unit) => (
+                    <SelectItem key={unit} value={unit}>
+                      {unit}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -290,6 +230,7 @@ export function Intake({
             </div>
           )}
         </form>
+        )}
       </section>
       <aside className="process-panel">
         <h3>What happens next</h3>

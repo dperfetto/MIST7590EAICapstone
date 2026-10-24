@@ -14,6 +14,8 @@ The application lives in [`Calder_Agreement_Review_V1/`](Calder_Agreement_Review
 
 For each active category in the Requester-declared contract-type playbook, Calder answers one question: **is this provision present?** Positive findings contain the category, exact source text, confidence indicator, and analysis method. A reviewer accepts, dismisses, or escalates the finding with a reason.
 
+Two conveniences sit on top of that workflow. **Bulk intake** (New intake → Bulk intake) takes up to 20 PDF or TXT files at once: set the vendor, agreement type, business unit and needed-by date once, change any file that differs, and each file goes through the same checks as a single submission, one at a time, with its own progress line. **Vendor history** in the review queue lists the vendor's earlier agreements and how each provision was decided before, with the latest reason; vendor names match regardless of case, punctuation or a trailing "Inc."/"LLC". Neither changes the database.
+
 The baseline does not extract values, compare legal standards, characterize deviations, assign risk severity, or create gaps from categories not found. That work is deliberately deferred and preserved as disabled stretch metadata; see `docs/STRETCH_BACKLOG.md` and `docs/CHANGE_LOG.md` for why.
 
 ### Analysis and fallback order
@@ -280,8 +282,10 @@ All paths are inside `Calder_Agreement_Review_V1/src/`.
 | Sign-in, account creation, password reset | `App.tsx` |
 | Sidebar, header, which page is showing | `workspace/Workspace.tsx` |
 | Menu items and which roles see each page | `workspace/navigation.ts` |
-| A page | `pages/` — `Overview.tsx`, `Intake.tsx`, `Agreements.tsx`, `Playbook.tsx`, `Reports.tsx`, `AuditLog.tsx`, `ProfileAccess.tsx` |
-| The review queue | `pages/review-queue/` — `Queue.tsx`, `AgreementDocument.tsx`, `ManualFinding.tsx` |
+| A page | `pages/` — `Overview.tsx`, `Agreements.tsx`, `Playbook.tsx`, `Reports.tsx`, `AuditLog.tsx`, `ProfileAccess.tsx` |
+| New intake (one agreement or bulk) | `pages/intake/` — `Intake.tsx`, `BulkIntake.tsx`, and `submitAgreement.ts` (the validate → upload → store → analyze steps both use) |
+| The review queue | `pages/review-queue/` — `Queue.tsx`, `AgreementDocument.tsx`, `ManualFinding.tsx`, `VendorHistory.tsx` |
+| Vendor history (matching vendor names, tallying past decisions) | `lib/vendorHistory.ts` |
 | AI evaluation results | `pages/evaluation/` |
 | Shared types, labels, date formatting | `workspace/types.ts`, `workspace/format.ts` |
 | Reading data / saving changes | `lib/queries.ts` / `lib/actions.ts` |
