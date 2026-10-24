@@ -8,6 +8,8 @@ import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { CheckCircle2 } from "lucide-react";
 import { ManualFinding } from "@/pages/review-queue/ManualFinding";
+import { VendorHistory } from "@/pages/review-queue/VendorHistory";
+import { provisionSummary, vendorHistory } from "@/lib/vendorHistory";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -56,6 +58,14 @@ export function Queue({
   const fs = current
     ? data.findings.filter((finding) => finding.agreementId === current.id)
     : [];
+  const history = current ? vendorHistory(current, data.agreements, data.findings) : undefined;
+  const historyNote = (provision: string) =>
+    provisionSummary(history?.provisions.find((p) => p.provision === provision));
+  // Open an agreement from the vendor history, on whichever tab lists it.
+  const openAgreement = (id: string) => {
+    setQueueTab(completedIds.has(id) ? "completed" : "pending");
+    setSelected(id);
+  };
 
   return (
     <div className="review-layout">
@@ -156,6 +166,9 @@ export function Queue({
             confidence
           </span>
         </div>
+        {history && (
+          <VendorHistory vendor={current.vendor} history={history} open={openAgreement} />
+        )}
         <AgreementDocument key={`doc-${current.id}`} agreement={current} />
         <div className="finding-stack">
           {fs.length ? (
@@ -180,6 +193,9 @@ export function Queue({
                   </div>
                 </div>
                 <p className="reason">{f.reason}</p>
+                {historyNote(f.provision) && (
+                  <p className="vendor-history-note">This vendor: {historyNote(f.provision)}</p>
+                )}
                 <blockquote>
                   <span>SOURCE TEXT</span>“{f.sourceText}”
                 </blockquote>

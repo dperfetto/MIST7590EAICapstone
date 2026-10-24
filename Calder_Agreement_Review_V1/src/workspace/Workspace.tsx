@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, Gavel, PanelLeftOpen, Plus, Search } from "lucide-react";
 import { roleLabels } from "@/lib/model";
 import { Overview } from "@/pages/Overview";
-import { Intake } from "@/pages/Intake";
+import { Intake } from "@/pages/intake/Intake";
 import { Queue } from "@/pages/review-queue/Queue";
 import { Agreements } from "@/pages/Agreements";
 import { Playbook } from "@/pages/Playbook";
@@ -118,7 +118,8 @@ export default function Workspace() {
     [agreements, type, status, search],
   );
   const agreement = agreements.find((a) => a.id === selected) ?? agreements[0];
-  const post = async (body: Record<string, unknown>) => {
+  // quiet: skip the success toast, for callers that report progress themselves (bulk intake).
+  const post = async (body: Record<string, unknown>, options?: { quiet?: boolean }) => {
     setBusy(true);
     try {
       const r = await fetch("/api/workspace", {
@@ -129,7 +130,7 @@ export default function Workspace() {
         j = await r.json();
       if (!r.ok) throw new Error(j.error);
       await refresh();
-      toast.success("Saved and added to the audit record.");
+      if (!options?.quiet) toast.success("Saved and added to the audit record.");
       return true;
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Could not save");

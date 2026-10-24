@@ -18,6 +18,13 @@ Before enabling gap detection, the team should require:
 4. a human confirmation step; and
 5. sponsor-approved rules defining which categories are expected by contract type.
 
+## Shipped stretch features (2026-10-24)
+
+These two use only data the baseline already stores, so they add no new judgments and no database changes.
+
+- **Vendor history.** The review queue shows the vendor's other agreements and, per provision, how many times reviewers accepted, dismissed or escalated it, with the latest reason. Each finding card gets a one-line summary ("Accepted 2 of 2 times before"). It is context for the reviewer, not a recommendation: the reviewer still decides every finding.
+- **Bulk intake.** Several PDF or TXT files submitted at once with shared details that can be changed per file. Each file runs through the same validation, upload, storage and analysis steps as single intake, one at a time, so a bad file fails on its own and the AI endpoint is not flooded.
+
 ## Activation rule
 
 Stretch features may begin only after the complete baseline is deployed and its intake, manual identification, review queue, disposition, audit, reporting, roles, and evaluation workflows pass acceptance testing.

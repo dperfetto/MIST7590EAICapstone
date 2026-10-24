@@ -1,8 +1,9 @@
 import { type Data } from "@/lib/model";
 
-const LOCAL_KEY = "calder-demo-v1-7";
+const LOCAL_KEY = "calder-demo-v1-8";
 export const now = () => new Date().toISOString();
 export const uid = () => crypto.randomUUID();
+const daysAgo = (days: number) => new Date(Date.now() - days * 86_400_000).toISOString();
 const seed: Data = {
   me: {
     name: "Jordan Lee",
@@ -54,6 +55,29 @@ const seed: Data = {
       status: "cleared_with_conditions",
       playbookVersion: "Professional Services v1",
       createdAt: now(),
+    },
+    // Earlier Northstar agreements, so the review queue can show vendor history.
+    {
+      id: "agr-1031",
+      vendor: "Northstar Cloud Systems, Inc.",
+      agreementType: "Software Subscription",
+      businessUnit: "Corporate IT",
+      neededBy: "2026-06-12",
+      filename: "Northstar-Order-Form-2026.pdf",
+      status: "cleared",
+      playbookVersion: "Software Subscription v1",
+      createdAt: daysAgo(120),
+    },
+    {
+      id: "agr-1018",
+      vendor: "Northstar Cloud Systems",
+      agreementType: "Software Subscription",
+      businessUnit: "Corporate IT",
+      neededBy: "2025-11-03",
+      filename: "Northstar-MSA-2025.pdf",
+      status: "cleared_with_conditions",
+      playbookVersion: "Software Subscription v1",
+      createdAt: daysAgo(330),
     },
   ],
   findings: [
@@ -118,6 +142,70 @@ const seed: Data = {
         "Customer may review Supplier's SOC 2 report and conduct a reasonable audit of records relevant to data security compliance.",
       reason: "Provision language identified for human verification.",
       status: "open",
+    },
+    {
+      id: "f-6",
+      agreementId: "agr-1031",
+      provision: "Notice to Terminate Renewal",
+      findingType: "present",
+      severity: "medium",
+      confidence: 93,
+      sourceText:
+        "The subscription renews for successive one-year terms unless either party gives sixty (60) days' written notice of non-renewal.",
+      reason: "Provision language identified for human verification.",
+      status: "accepted",
+      decisionReason: "Renewal notice period confirmed; added to the contract calendar.",
+    },
+    {
+      id: "f-7",
+      agreementId: "agr-1031",
+      provision: "Cap on Liability",
+      findingType: "present",
+      severity: "medium",
+      confidence: 89,
+      sourceText:
+        "Each party's total liability is limited to the fees paid in the twelve months before the claim.",
+      reason: "Provision language identified for human verification.",
+      status: "accepted",
+      decisionReason: "Twelve-month fee cap approved by Legal as standard for this vendor.",
+    },
+    {
+      id: "f-8",
+      agreementId: "agr-1018",
+      provision: "Notice to Terminate Renewal",
+      findingType: "present",
+      severity: "medium",
+      confidence: 90,
+      sourceText:
+        "This Agreement renews automatically unless Customer cancels at least ninety (90) days before the renewal date.",
+      reason: "Provision language identified for human verification.",
+      status: "accepted",
+      decisionReason: "Notice period confirmed against the signed MSA.",
+    },
+    {
+      id: "f-9",
+      agreementId: "agr-1018",
+      provision: "Cap on Liability",
+      findingType: "present",
+      severity: "medium",
+      confidence: 84,
+      sourceText:
+        "Vendor's liability shall not exceed the fees paid in the six (6) months preceding the claim.",
+      reason: "Provision language identified for human verification.",
+      status: "escalated",
+      decisionReason: "Six-month cap is below our standard; Approver to confirm with Legal.",
+    },
+    {
+      id: "f-10",
+      agreementId: "agr-1018",
+      provision: "Governing Law",
+      findingType: "present",
+      severity: "medium",
+      confidence: 96,
+      sourceText: "This Agreement is governed by the laws of the State of Delaware.",
+      reason: "Provision language identified for human verification.",
+      status: "dismissed",
+      decisionReason: "Clause refers to a superseded order form, not this agreement.",
     },
   ],
   rules: [

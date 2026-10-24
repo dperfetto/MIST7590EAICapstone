@@ -421,3 +421,28 @@ test("users can reset a forgotten password through Supabase Auth", () => {
   // The recovery marker is read before Supabase clears the URL.
   assert.match(data, /openedFromRecoveryLink[\s\S]*?export const supabase = connected \? createClient/);
 });
+
+test("reviewers see the vendor's earlier agreements and decisions", () => {
+  assert.match(workspace, /vendorHistory\(current, data\.agreements, data\.findings\)/);
+  assert.match(workspace, /<VendorHistory vendor=\{current\.vendor\} history=\{history\} open=\{openAgreement\} \/>/);
+  assert.match(workspace, /This vendor: \{historyNote\(f\.provision\)\}/);
+  // The demo seed includes an earlier Northstar agreement to show it.
+  assert.match(data, /vendor: "Northstar Cloud Systems, Inc\."/);
+});
+
+test("bulk intake sends every file through the single-intake pipeline", () => {
+  assert.match(workspace, /<BulkIntake submit=\{submit\} rules=\{rules\} onRunningChange=\{setBulkRunning\} \/>/);
+  assert.match(workspace, /<input\s+type="file"\s+multiple/);
+  assert.match(workspace, /export const MAX_BULK_FILES = 20;/);
+  // Shared details with per-file overrides.
+  assert.match(workspace, /const detailsFor = \(row: Row\): IntakeDetails => \(\{ \.\.\.shared, \.\.\.row\.overrides \}\)/);
+  // Files run one at a time through submitAgreement, the same function single intake uses.
+  assert.match(workspace, /for \(const row of pending\) \{[\s\S]*?await submitAgreement\(/);
+  assert.match(workspace, /const outcome = await submitAgreement\(/);
+  assert.match(workspace, /Every file needs a vendor and a needed-by date/);
+  assert.match(workspace, /submit: \(body\) => submit\(body, \{ quiet: true \}\)/);
+});
+
+test("empty text files are rejected like image-only PDFs", () => {
+  assert.match(analyzer, /This text file is empty or too short to review/);
+});

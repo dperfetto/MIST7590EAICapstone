@@ -72,8 +72,13 @@ function pdfErrorMessage(error: unknown) {
 export async function extractDocumentText(file: File) {
   if (file.size > 10 * 1024 * 1024)
     throw new Error("Upload a PDF or TXT file no larger than 10 MB.");
-  if (file.type === "text/plain" || file.name.toLowerCase().endsWith(".txt"))
-    return clean(await readTextFile(file));
+  if (file.type === "text/plain" || file.name.toLowerCase().endsWith(".txt")) {
+    const text = clean(await readTextFile(file));
+    // Same minimum as a searchable PDF, so empty files never reach the queue.
+    if (text.trim().length < 40)
+      throw new Error("This text file is empty or too short to review.");
+    return text;
+  }
   if (
     file.type !== "application/pdf" &&
     !file.name.toLowerCase().endsWith(".pdf")
