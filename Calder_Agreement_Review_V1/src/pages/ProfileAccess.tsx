@@ -1,6 +1,6 @@
 import { type Data } from "@/workspace/types";
 import { useState } from "react";
-import { roleLabels, type UserRole } from "@/lib/data";
+import { roleLabels, type UserRole } from "@/lib/model";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";

@@ -1,5 +1,5 @@
 import { Archive, BarChart3, BookOpenCheck, FileSearch, FlaskConical, LayoutDashboard, ShieldCheck, Upload, UserRoundCog } from "lucide-react";
-import { type UserRole } from "@/lib/data";
+import { type UserRole } from "@/lib/model";
 
 type NavIcon = typeof LayoutDashboard;
 type NavItem = readonly [string, string, NavIcon];

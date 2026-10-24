@@ -1,4 +1,4 @@
-import { roleLabels, type UserRole } from "@/lib/data";
+import { roleLabels, type UserRole } from "@/lib/model";
 import { type Agreement, type Data } from "@/workspace/types";
 import { useState } from "react";
 import { formatDueDate, label, parseDueDate, tone } from "@/workspace/format";

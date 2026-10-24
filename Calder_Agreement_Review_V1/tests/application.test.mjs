@@ -13,6 +13,11 @@ const readTree = async (dir) => {
     .sort();
   return (await Promise.all(files.map((f) => readFile(f, "utf8")))).join("\n");
 };
+// The data layer is split across src/lib by job; checks read it as one text.
+const readDataLayer = async () =>
+  (await Promise.all(
+    ["model", "supabaseClient", "demoStore", "queries", "actions", "workspaceApi"].map((m) => read(`../src/lib/${m}.ts`)),
+  )).join("\n");
 const readWorkspaceUi = async () =>
   (await Promise.all(["../src/workspace/", "../src/pages/", "../src/components/"].map(readTree))).join("\n");
 const [
@@ -21,7 +26,7 @@ const [
   decisionLog, stretchBacklog, hostingComparison, classifierApp,
   ingestionVerifier, agreementFiles, documentPreview,
 ] = await Promise.all([
-  readWorkspaceUi(), read("../src/lib/data.ts"),
+  readWorkspaceUi(), readDataLayer(),
   read("../src/lib/analyze.ts"), read("../src/lib/candidateRetrieval.ts"),
   read("../api/analyze.js"), read("../src/styles.css"),
   read("../src/slabstax-shell.css"), read("../src/main.tsx"),

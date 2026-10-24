@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { type EvaluationRun } from "@/lib/data";
+import { type EvaluationRun } from "@/lib/model";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CuadEvaluation } from "@/pages/evaluation/CuadEvaluation";

@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { agreementTypes } from "@/lib/data";
+import { agreementTypes } from "@/lib/model";
 import { FileSearch, Loader2, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 

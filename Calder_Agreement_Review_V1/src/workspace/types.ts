@@ -1,4 +1,4 @@
-import { type AnalysisPath, type UserRole } from "@/lib/data";
+import { type AnalysisPath, type UserRole } from "@/lib/model";
 
 export type Agreement = {
   id: string;

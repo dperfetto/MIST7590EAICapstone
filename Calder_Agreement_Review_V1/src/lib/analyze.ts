@@ -1,6 +1,6 @@
 import * as pdfjs from "pdfjs-dist/legacy/build/pdf.mjs";
 import pdfWorker from "pdfjs-dist/legacy/build/pdf.worker.min.mjs?url";
-import { supabase } from "./data";
+import { supabase } from "./supabaseClient";
 import { readLocalFile } from "./agreementFiles";
 import {
   AI_MAX_CHUNKS,

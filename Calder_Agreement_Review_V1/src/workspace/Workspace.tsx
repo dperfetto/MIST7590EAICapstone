@@ -5,7 +5,7 @@ import { allowedViews, nav, navSections } from "@/workspace/navigation";
 import { toast, Toaster } from "sonner";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, Gavel, PanelLeftOpen, Plus, Search } from "lucide-react";
-import { roleLabels } from "@/lib/data";
+import { roleLabels } from "@/lib/model";
 import { Overview } from "@/pages/Overview";
 import { Intake } from "@/pages/Intake";
 import { Queue } from "@/pages/review-queue/Queue";

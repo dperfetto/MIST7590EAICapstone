@@ -197,7 +197,7 @@ escalated finding cannot be escalated again. Every decision and its reason are w
 audit log.
 
 After each decision, the agreement status is recalculated from its findings
-(`agreementReviewStatus`, `src/lib/data.ts`):
+(`agreementReviewStatus`, `src/lib/model.ts`):
 
 | Findings | Agreement status |
 |---|---|

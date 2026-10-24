@@ -1,6 +1,6 @@
 import { type Rule } from "@/workspace/types";
 import { useState } from "react";
-import { agreementTypes } from "@/lib/data";
+import { agreementTypes } from "@/lib/model";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";

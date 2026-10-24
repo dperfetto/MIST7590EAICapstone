@@ -3,7 +3,7 @@ import { useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChevronRight, FileText, Search } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { agreementTypes } from "@/lib/data";
+import { agreementTypes } from "@/lib/model";
 import { formatDueDate, label, tone } from "@/workspace/format";
 import { Badge } from "@/components/ui/badge";
 

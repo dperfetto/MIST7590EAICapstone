@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { type Audit } from "@/workspace/types";
-import { getAllAuditEvents, getAuditPage } from "@/lib/data";
+import { getAllAuditEvents, getAuditPage } from "@/lib/queries";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";

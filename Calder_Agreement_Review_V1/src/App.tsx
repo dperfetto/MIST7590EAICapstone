@@ -1,6 +1,6 @@
 import { useEffect,useState,type ReactNode } from "react";
 import Workspace from "./workspace/Workspace";
-import { authLinkError,connected,openedFromRecoveryLink,supabase } from "./lib/data";
+import { authLinkError, connected, openedFromRecoveryLink, supabase } from "./lib/supabaseClient";
 import { Button } from "./components/ui/button";
 import { Input } from "./components/ui/input";
 import { Label } from "./components/ui/label";

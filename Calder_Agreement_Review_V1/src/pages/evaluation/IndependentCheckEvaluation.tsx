@@ -1,4 +1,4 @@
-import { type EvaluationRun } from "@/lib/data";
+import { type EvaluationRun } from "@/lib/model";
 import { useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";

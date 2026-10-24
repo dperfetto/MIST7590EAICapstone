@@ -3,7 +3,7 @@ import { daysUntilDue } from "@/workspace/format";
 import { Kpi } from "@/components/Kpi";
 import { AlertTriangle, FileSearch, FileText, Gavel, ShieldCheck } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { agreementTypes } from "@/lib/data";
+import { agreementTypes } from "@/lib/model";
 
 export function Reports({ data }: { data: Data }) {
   const categories = [...new Set(data.findings.map((f) => f.provision))];

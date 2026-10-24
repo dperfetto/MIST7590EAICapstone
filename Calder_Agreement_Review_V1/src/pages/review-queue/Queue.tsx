@@ -1,5 +1,5 @@
 import { type Agreement, type Data, type Finding } from "@/workspace/types";
-import { type UserRole } from "@/lib/data";
+import { type UserRole } from "@/lib/model";
 import { useState } from "react";
 import { formatDueDate, label, tone } from "@/workspace/format";
 import { Badge } from "@/components/ui/badge";
