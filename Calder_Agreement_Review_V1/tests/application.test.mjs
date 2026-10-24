@@ -421,3 +421,11 @@ test("users can reset a forgotten password through Supabase Auth", () => {
   // The recovery marker is read before Supabase clears the URL.
   assert.match(data, /openedFromRecoveryLink[\s\S]*?export const supabase = connected \? createClient/);
 });
+
+test("reviewers see the vendor's earlier agreements and decisions", () => {
+  assert.match(workspace, /vendorHistory\(current, data\.agreements, data\.findings\)/);
+  assert.match(workspace, /<VendorHistory vendor=\{current\.vendor\} history=\{history\} open=\{openAgreement\} \/>/);
+  assert.match(workspace, /This vendor: \{historyNote\(f\.provision\)\}/);
+  // The demo seed includes an earlier Northstar agreement to show it.
+  assert.match(data, /vendor: "Northstar Cloud Systems, Inc\."/);
+});

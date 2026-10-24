@@ -2442,3 +2442,132 @@ body { overflow-x: hidden; }
     min-width: 340px;
   }
 }
+
+/* Vendor history in the review queue */
+.vendor-history {
+  background: white;
+  border: 1px solid var(--calder-border);
+  border-radius: 14px;
+  margin-bottom: 16px;
+}
+.vendor-history summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 12px 16px;
+  cursor: pointer;
+  color: #3d4b5d;
+  font-size: 0.85rem;
+}
+.vendor-history summary svg {
+  color: var(--calder-accent);
+}
+.vendor-history summary span {
+  color: #6d7888;
+}
+.vendor-history-body {
+  border-top: 1px solid var(--calder-border);
+  padding: 12px 16px 14px;
+  display: grid;
+  gap: 12px;
+  overflow-x: auto;
+}
+.vendor-history-agreements {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.vendor-history-agreements button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 7px 10px;
+  background: #f7f9fb;
+  border: 1px solid var(--calder-border);
+  border-radius: 8px;
+  font-size: 0.8rem;
+  text-align: left;
+  cursor: pointer;
+}
+.vendor-history-agreements button:hover,
+.vendor-history-agreements button:focus-visible {
+  border-color: var(--calder-accent);
+}
+.vendor-history-agreements span {
+  color: #6d7888;
+}
+.vendor-history-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+}
+.vendor-history-table th,
+.vendor-history-table td {
+  padding: 6px 8px;
+  border-bottom: 1px solid #eef2f6;
+  text-align: left;
+  vertical-align: top;
+}
+.vendor-history-table thead th {
+  color: #8190a0;
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.vendor-history-table td:nth-child(n + 2):nth-child(-n + 5) {
+  text-align: center;
+}
+.vendor-history-empty,
+.vendor-history-note {
+  margin: -6px 0 14px;
+  color: #6d7888;
+  font-size: 0.8rem;
+}
+.vendor-history-empty {
+  margin: 0;
+}
+@media (max-width: 640px) {
+  /* One card per provision instead of a wide table. */
+  .vendor-history-table thead {
+    display: none;
+  }
+  .vendor-history-table,
+  .vendor-history-table tbody,
+  .vendor-history-table tr,
+  .vendor-history-table th,
+  .vendor-history-table td {
+    display: block;
+  }
+  .vendor-history-table tr {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 2px 8px;
+    padding: 8px 0;
+    border-bottom: 1px solid #eef2f6;
+  }
+  .vendor-history-table th,
+  .vendor-history-table td {
+    border: 0;
+    padding: 2px 0;
+  }
+  .vendor-history-table th,
+  .vendor-history-table td:last-child {
+    grid-column: 1 / -1;
+  }
+  .vendor-history-table td:nth-child(n + 2):nth-child(-n + 5) {
+    text-align: left;
+  }
+  .vendor-history-table td:nth-child(2)::before { content: "Accepted "; }
+  .vendor-history-table td:nth-child(3)::before { content: "Dismissed "; }
+  .vendor-history-table td:nth-child(4)::before { content: "Escalated "; }
+  .vendor-history-table td:nth-child(5)::before { content: "Open "; }
+  .vendor-history-table td::before {
+    color: #8190a0;
+    font-size: 0.68rem;
+  }
+}
