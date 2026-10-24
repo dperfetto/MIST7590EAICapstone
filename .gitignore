@@ -8,3 +8,4 @@ Calder_Agreement_Review_V1/evaluation/data/
 
 # AI check-set response cache (results.json keeps the scored output)
 Calder_Agreement_Review_V1/evaluation/ai-check-set/cache/
+Calder_Agreement_Review_V1/evaluation/independent-check/ai-results/cache/
