@@ -271,6 +271,25 @@ npm run verify:ingestion -- "/absolute/path/to/file.pdf"   # check a file's extr
 npm run evaluate:independent-check   # Section 6.3 check against 10 modified standard-form agreements
 ```
 
+## Where the code is
+
+All paths are inside `Calder_Agreement_Review_V1/src/`.
+
+| Looking for | File |
+|---|---|
+| Sign-in, account creation, password reset | `App.tsx` |
+| Sidebar, header, which page is showing | `workspace/Workspace.tsx` |
+| Menu items and which roles see each page | `workspace/navigation.ts` |
+| A page | `pages/` — `Overview.tsx`, `Intake.tsx`, `Agreements.tsx`, `Playbook.tsx`, `Reports.tsx`, `AuditLog.tsx`, `ProfileAccess.tsx` |
+| The review queue | `pages/review-queue/` — `Queue.tsx`, `AgreementDocument.tsx`, `ManualFinding.tsx` |
+| AI evaluation results | `pages/evaluation/` |
+| Shared types, labels, date formatting | `workspace/types.ts`, `workspace/format.ts` |
+| Reading data / saving changes | `lib/queries.ts` / `lib/actions.ts` |
+| Demo-mode sample data | `lib/demoStore.ts` |
+| Supabase connection | `lib/supabaseClient.ts` |
+| Analysis (keyword matching, AI calls) | `lib/analyze.ts`, `lib/candidateRetrieval.ts`, `lib/chunkText.ts`, and `../api/analyze.js` on the server |
+| All styles | `styles.css` |
+
 ## Documentation
 
 All paths are inside `Calder_Agreement_Review_V1/`.
