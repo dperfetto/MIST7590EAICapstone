@@ -1,5 +1,5 @@
 import { useEffect,useState,type ReactNode } from "react";
-import Workspace from "./Workspace";
+import Workspace from "./workspace/Workspace";
 import { authLinkError,connected,openedFromRecoveryLink,supabase } from "./lib/data";
 import { Button } from "./components/ui/button";
 import { Input } from "./components/ui/input";

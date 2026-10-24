@@ -1,15 +1,27 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
+import { readFile, readdir } from "node:fs/promises";
 import test from "node:test";
 
 const read = (path) => readFile(new URL(path, import.meta.url), "utf8");
+// The workspace UI is split across src/workspace, src/pages and
+// src/components; source checks read it as one text.
+const readTree = async (dir) => {
+  const entries = await readdir(new URL(dir, import.meta.url), { withFileTypes: true, recursive: true });
+  const files = entries
+    .filter((e) => e.isFile() && /\.tsx?$/.test(e.name) && !e.parentPath.includes("/components/ui"))
+    .map((e) => `${e.parentPath}/${e.name}`)
+    .sort();
+  return (await Promise.all(files.map((f) => readFile(f, "utf8")))).join("\n");
+};
+const readWorkspaceUi = async () =>
+  (await Promise.all(["../src/workspace/", "../src/pages/", "../src/components/"].map(readTree))).join("\n");
 const [
   workspace, data, analyzer, retrieval, aiEndpoint, styles, shell, main,
   schema, app, viteConfig, mappingCsv, evaluator, pdfEvaluator, changeLog,
   decisionLog, stretchBacklog, hostingComparison, classifierApp,
   ingestionVerifier, agreementFiles, documentPreview,
 ] = await Promise.all([
-  read("../src/Workspace.tsx"), read("../src/lib/data.ts"),
+  readWorkspaceUi(), read("../src/lib/data.ts"),
   read("../src/lib/analyze.ts"), read("../src/lib/candidateRetrieval.ts"),
   read("../api/analyze.js"), read("../src/styles.css"),
   read("../src/slabstax-shell.css"), read("../src/main.tsx"),
