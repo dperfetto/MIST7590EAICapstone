@@ -35,7 +35,8 @@ export const navSections: NavSection[] = [
 ];
 export const nav = navSections.flatMap((section) => section.items);
 export const allowedViews: Record<UserRole, string[]> = {
-  submitter: ["overview", "intake", "agreements", "profile"],
+  // Submitters see the queue read-only, limited to their own agreements by row-level security.
+  submitter: ["overview", "intake", "queue", "agreements", "profile"],
   reviewer: ["overview", "intake", "queue", "agreements", "reports", "audit", "profile"],
   approver: ["overview", "intake", "queue", "agreements", "reports", "audit", "profile"],
   administrator: nav.map(([id]) => id),

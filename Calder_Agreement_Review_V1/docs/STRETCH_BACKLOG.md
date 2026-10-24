@@ -25,6 +25,13 @@ These two use only data the baseline already stores, so they add no new judgment
 - **Vendor history.** The review queue shows the vendor's other agreements and, per provision, how many times reviewers accepted, dismissed or escalated it, with the latest reason. Each finding card gets a one-line summary ("Accepted 2 of 2 times before"). It is context for the reviewer, not a recommendation: the reviewer still decides every finding.
 - **Bulk intake.** Several PDF or TXT files submitted at once with shared details that can be changed per file. Each file runs through the same validation, upload, storage and analysis steps as single intake, one at a time, so a bad file fails on its own and the AI endpoint is not flooded.
 
+## Shipped stretch features (2026-10-24, second set)
+
+These add two tables (`finding_comments`, `playbook_versions`) and a trigger; rerun `supabase/schema.sql` to install them.
+
+- **Clause-level comment threads.** A discussion on each finding between the Requester and the review team. Submitters open the review queue read-only for their own agreements. Row-level security lets only people who can see the agreement read or post, a comment must carry the poster's own account and role, and comments cannot be edited or deleted. Each comment is also written to the audit log.
+- **Playbook versioning with re-evaluation.** A trigger on `playbook_rules` records a numbered version whenever a provision is switched on or off, so versions are recorded even for changes made outside the app. Agreements store the version they were analyzed under. Re-evaluating an older review runs analysis only for provisions added since and never changes earlier findings or decisions; provisions switched off are noted, and their findings are kept. When the stored file is unavailable, or the agreement was sent to manual review, the re-evaluation is recorded and the new provisions are left for a reviewer to check by hand.
+
 ## Activation rule
 
 Stretch features may begin only after the complete baseline is deployed and its intake, manual identification, review queue, disposition, audit, reporting, roles, and evaluation workflows pass acceptance testing.

@@ -446,3 +446,33 @@ test("bulk intake sends every file through the single-intake pipeline", () => {
 test("empty text files are rejected like image-only PDFs", () => {
   assert.match(analyzer, /This text file is empty or too short to review/);
 });
+
+test("requesters and reviewers discuss findings in durable comment threads", () => {
+  assert.match(schema, /create table if not exists public\.finding_comments/);
+  assert.match(schema, /"Agreement participants add comments"[\s\S]*?author_role=public\.current_user_role\(\)/);
+  assert.doesNotMatch(schema, /on public\.finding_comments for (update|delete)/);
+  for (const action of ["add_comment", "reevaluate_agreement"]) {
+    const matches = data.match(new RegExp(`body\\.action === "${action}"`, "g")) ?? [];
+    assert.ok(matches.length >= 2, `${action} must exist locally and in Supabase`);
+  }
+  assert.match(data, /eventType: "Comment added"/);
+  assert.match(data, /event_type: "Comment added"/);
+  assert.match(workspace, /<FindingThread\s+finding=\{f\}/);
+  // Submitters open the queue read-only.
+  assert.match(workspace, /submitter: \["overview", "intake", "queue", "agreements", "profile"\]/);
+  assert.match(workspace, /const readOnly = role === "submitter";/);
+  assert.match(workspace, /\{!readOnly && !completedIds\.has\(current\.id\) && \(/);
+});
+
+test("playbook changes are versioned and older reviews can be re-evaluated", () => {
+  assert.match(schema, /create table if not exists public\.playbook_versions/);
+  assert.match(schema, /create trigger on_playbook_rule_toggled after update of active on public\.playbook_rules/);
+  assert.match(schema, /-- No insert, update or delete policies: only the trigger writes versions\./);
+  assert.match(data, /playbookVersion: versionLabel\(/);
+  assert.match(data, /playbook_version: versionLabel\(String\(body\.agreementType\), await currentPlaybookVersion/);
+  assert.match(workspace, /playbookChange\(data\.playbookVersions, current\)/);
+  // Re-evaluation checks only provisions added since, and keeps decisions.
+  assert.match(workspace, /const toCheck = change\.added\.filter\(\(p\) => !alreadyFound\.has\(p\)\)/);
+  assert.match(workspace, /action: "reevaluate_agreement"/);
+  assert.doesNotMatch(data, /reevaluate[\s\S]{0,400}from\("findings"\)\s*\.delete/);
+});

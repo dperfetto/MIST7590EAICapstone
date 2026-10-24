@@ -356,3 +356,87 @@ insert into public.playbook_rules (id,agreement_type,provision,applicability,sta
 ('rule-36','Other','Audit Rights','M','Disabled stretch metadata - not used by the baseline','Hybrid','Medium'),
 ('rule-37','Other','Warranty Duration','M','Disabled stretch metadata - not used by the baseline','Hybrid','Medium')
 on conflict (id) do update set agreement_type=excluded.agreement_type,provision=excluded.provision,applicability=excluded.applicability,standard=excluded.standard,method=excluded.method,severity=excluded.severity;
+
+-- Playbook versioning. Every time a provision is switched on or off, the
+-- trigger below records a numbered version of that contract type's playbook
+-- with the provisions active in it. Agreements record the version they were
+-- analyzed under ("Software Subscription v3"), so a review done under an older
+-- version can be re-evaluated for the provisions added since.
+create table if not exists public.playbook_versions (
+  id uuid primary key default gen_random_uuid(),
+  agreement_type text not null,
+  version integer not null check (version > 0),
+  active_provisions text[] not null,
+  change_summary text not null,
+  changed_by uuid references auth.users(id) on delete restrict,
+  changed_by_name text not null default 'System',
+  created_at timestamptz not null default now(),
+  unique (agreement_type, version)
+);
+
+-- Version 1 of each contract type is the playbook as it stands when this runs.
+insert into public.playbook_versions (agreement_type, version, active_provisions, change_summary)
+select agreement_type, 1, coalesce(array_agg(provision order by provision) filter (where active), '{}'), 'Initial playbook'
+from public.playbook_rules group by agreement_type
+on conflict (agreement_type, version) do nothing;
+
+create or replace function public.record_playbook_version()
+returns trigger language plpgsql security definer set search_path = public as $$
+declare next_version integer;
+begin
+  if new.active is not distinct from old.active then return new; end if;
+  perform pg_advisory_xact_lock(hashtext('playbook_versions:' || new.agreement_type));
+  select coalesce(max(version), 0) + 1 into next_version
+  from public.playbook_versions where agreement_type = new.agreement_type;
+  insert into public.playbook_versions (agreement_type, version, active_provisions, change_summary, changed_by, changed_by_name)
+  values (
+    new.agreement_type,
+    next_version,
+    array(select provision from public.playbook_rules where agreement_type = new.agreement_type and active order by provision),
+    new.provision || case when new.active then ' switched on' else ' switched off' end,
+    auth.uid(),
+    coalesce((select full_name from public.profiles where id = auth.uid()), 'System')
+  );
+  return new;
+end; $$;
+
+drop trigger if exists on_playbook_rule_toggled on public.playbook_rules;
+create trigger on_playbook_rule_toggled after update of active on public.playbook_rules
+for each row execute procedure public.record_playbook_version();
+
+alter table public.playbook_versions enable row level security;
+drop policy if exists "Authenticated users read playbook versions" on public.playbook_versions;
+create policy "Authenticated users read playbook versions" on public.playbook_versions for select to authenticated using (true);
+-- No insert, update or delete policies: only the trigger writes versions.
+
+-- Comment threads on findings between the Requester and the review team.
+-- Comments are part of the record: they can be added, never edited or deleted.
+create table if not exists public.finding_comments (
+  id uuid primary key default gen_random_uuid(),
+  finding_id uuid not null references public.findings(id) on delete restrict,
+  agreement_id text not null references public.agreements(id) on delete restrict,
+  user_id uuid not null references auth.users(id) on delete restrict,
+  author_name text not null,
+  author_role text not null check (author_role in ('submitter','reviewer','approver','administrator')),
+  body text not null check (length(btrim(body)) between 1 and 2000),
+  created_at timestamptz not null default now()
+);
+create index if not exists finding_comments_finding_idx on public.finding_comments (finding_id, created_at);
+
+alter table public.finding_comments enable row level security;
+-- Whoever can see the agreement (its submitter and the review team) can read
+-- and add to its threads.
+drop policy if exists "Agreement participants read comments" on public.finding_comments;
+create policy "Agreement participants read comments" on public.finding_comments for select to authenticated
+using (exists (select 1 from public.agreements a where a.id=agreement_id and (a.user_id=auth.uid() or public.current_user_role() in ('reviewer','approver','administrator'))));
+drop policy if exists "Agreement participants add comments" on public.finding_comments;
+create policy "Agreement participants add comments" on public.finding_comments for insert to authenticated
+with check (
+  user_id=auth.uid()
+  and author_role=public.current_user_role()
+  and exists (
+    select 1 from public.findings f join public.agreements a on a.id=f.agreement_id
+    where f.id=finding_id and a.id=agreement_id
+    and (a.user_id=auth.uid() or public.current_user_role() in ('reviewer','approver','administrator'))
+  )
+);

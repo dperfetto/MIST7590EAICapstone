@@ -10,6 +10,9 @@ import { CheckCircle2 } from "lucide-react";
 import { ManualFinding } from "@/pages/review-queue/ManualFinding";
 import { VendorHistory } from "@/pages/review-queue/VendorHistory";
 import { provisionSummary, vendorHistory } from "@/lib/vendorHistory";
+import { playbookChange } from "@/lib/playbookVersions";
+import { PlaybookChange } from "@/pages/review-queue/PlaybookChange";
+import { FindingThread } from "@/pages/review-queue/FindingThread";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -58,6 +61,12 @@ export function Queue({
   const fs = current
     ? data.findings.filter((finding) => finding.agreementId === current.id)
     : [];
+  // Requesters follow their agreements and reply in threads; decisions stay with the review team.
+  const readOnly = role === "submitter";
+  const change = current ? playbookChange(data.playbookVersions, current) : null;
+  const inPlaybook = new Set(
+    data.rules.filter((r) => r.agreementType === current?.agreementType && r.active).map((r) => r.provision),
+  );
   const history = current ? vendorHistory(current, data.agreements, data.findings) : undefined;
   const historyNote = (provision: string) =>
     provisionSummary(history?.provisions.find((p) => p.provision === provision));
@@ -166,6 +175,22 @@ export function Queue({
             confidence
           </span>
         </div>
+        {change && (
+          <PlaybookChange
+            key={`change-${current.id}`}
+            agreement={current}
+            change={change}
+            findings={fs}
+            rules={data.rules}
+            canReevaluate={!readOnly}
+            submit={decide}
+          />
+        )}
+        {readOnly && (
+          <p className="read-only-note">
+            You can follow this review and reply to reviewers in each finding&apos;s discussion. Decisions are made by the review team.
+          </p>
+        )}
         {history && (
           <VendorHistory vendor={current.vendor} history={history} open={openAgreement} />
         )}
@@ -186,6 +211,11 @@ export function Queue({
                       {label(f.analysisMethod || "manual")}
                     </Badge>
                     <strong>{f.provision}</strong>
+                    {!inPlaybook.has(f.provision) && (
+                      <Badge variant="outline" className="method-badge">
+                        No longer in playbook
+                      </Badge>
+                    )}
                   </div>
                   <div className="confidence">
                     <span>{f.confidence}% confidence</span>
@@ -199,7 +229,9 @@ export function Queue({
                 <blockquote>
                   <span>SOURCE TEXT</span>“{f.sourceText}”
                 </blockquote>
-                {f.status === "open" || (f.status === "escalated" && ["approver", "administrator"].includes(role)) ? (
+                {readOnly && f.status === "open" ? (
+                  <div className="decision pending">Awaiting a reviewer&apos;s decision</div>
+                ) : !readOnly && (f.status === "open" || (f.status === "escalated" && ["approver", "administrator"].includes(role))) ? (
                   <Button
                     onClick={() => {
                       setActive(f);
@@ -217,6 +249,11 @@ export function Queue({
                     </span>
                   </div>
                 )}
+                <FindingThread
+                  finding={f}
+                  comments={data.comments.filter((c) => c.findingId === f.id)}
+                  submit={decide}
+                />
               </article>
             ))
           ) : (
@@ -227,7 +264,7 @@ export function Queue({
             </div>
           )}
         </div>
-        {!completedIds.has(current.id) && (
+        {!readOnly && !completedIds.has(current.id) && (
           <ManualFinding key={current.id} agreement={current} submit={decide} />
         )}
       </section>
