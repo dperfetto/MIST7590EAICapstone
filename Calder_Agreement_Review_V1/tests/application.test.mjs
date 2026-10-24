@@ -391,3 +391,14 @@ test("AI evaluation results are readable by administrators only and never writte
     );
   assert.doesNotMatch(workspace, /overall accuracy[^.]*%/i);
 });
+
+test("users can reset a forgotten password through Supabase Auth", () => {
+  assert.match(app, /resetPasswordForEmail\(email,\{redirectTo:window\.location\.origin\}\)/);
+  assert.match(app, /event==="PASSWORD_RECOVERY"/);
+  assert.match(app, /auth\.updateUser\(\{password\}\)/);
+  assert.match(app, /Forgot password\?/);
+  // Same reply whether or not the account exists.
+  assert.match(app, /If an account exists for \$\{email\}/);
+  // The recovery marker is read before Supabase clears the URL.
+  assert.match(data, /openedFromRecoveryLink[\s\S]*?export const supabase = connected \? createClient/);
+});
