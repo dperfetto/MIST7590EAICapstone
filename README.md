@@ -103,8 +103,8 @@ Use this to test real sign-up/sign-in, role-based access, row-level security, an
 
 1. Create a Supabase project.
 2. In **SQL Editor → New query**, paste and run the complete `supabase/schema.sql`. It creates the five tables (`profiles`, `agreements`, `findings`, `playbook_rules`, `audit_events`), row-level security policies, the `assign_user_role` function, private object storage, and seed playbook data. Existing v1.5 deployments must rerun it to migrate shorthand agreement types and allow the `present` finding type while retaining historical findings.
-3. Confirm **Email** auth is enabled under **Authentication → Providers** (on by default). Email verification, password reset, MFA, and account lockout are not required by the project.
-4. Under **Authentication → URL Configuration**, set **Site URL** to `http://localhost:5173`. If it stays at Supabase's default `http://localhost:3000`, signup and password-reset emails link to a port nothing is running on.
+3. Confirm **Email** auth is enabled under **Authentication → Providers** (on by default). Email verification, MFA, and account lockout are not required by the project. Password reset is built in: **Forgot password?** on the sign-in page emails a link that returns to the app to choose a new password.
+4. Under **Authentication → URL Configuration**, set **Site URL** to `http://localhost:5173` and add `http://localhost:5173` to **Redirect URLs**. If Site URL stays at Supabase's default `http://localhost:3000`, signup and password-reset emails link to a port nothing is running on; a reset link only returns to an address listed under Redirect URLs.
 5. Under **Project Settings → API**, copy the **Project URL** and the **anon / publishable** key. Never use the `service_role` key in this project.
 6. Create `Calder_Agreement_Review_V1/.env.local` containing:
 
@@ -251,6 +251,7 @@ Findings are written up in `evaluation/independent-check/RESULTS.md` (section "A
 - **`npm install -g vercel` fails with `EACCES`**: don't change npm's global permissions; use `npx vercel <command>`.
 - **`npm warn EBADENGINE`**: your Node version doesn't match the pinned `22.x`. Usually only a warning; switch with `nvm use 22` if anything stranger happens.
 - **Signup or password-reset link goes to `localhost:3000` and fails**: Supabase's Site URL is still the default. Set it under Authentication → URL Configuration (step 2, Option B, item 4, or deploy step 7).
+- **Password-reset link opens the wrong site, or the reset email never arrives**: the app's address must be listed under Authentication → URL Configuration → **Redirect URLs** (`http://localhost:5173` locally, your Vercel domain in production). Supabase's built-in email sender only allows a few emails per hour on the free tier (see Authentication → Rate Limits); for real use, configure your own SMTP server under Authentication → Emails.
 - **App still shows demo data after adding `.env.local`**: restart `npm run dev`; Vite reads env files only at startup.
 - **`vercel dev` throws `Failed to parse source for import analysis`**: the SPA rewrite in `vercel.json` is intercepting Vite's dev requests. See Option C.
 - **Vercel dashboard settings are grayed out or won't save**: check your role on the Vercel team. Owner/Administrator can edit; Developer/Member often can't. Ask the project owner to make the change or raise your role.
