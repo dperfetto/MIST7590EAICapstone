@@ -29,7 +29,7 @@ const [
   readWorkspaceUi(), readDataLayer(),
   read("../src/lib/analyze.ts"), read("../src/lib/candidateRetrieval.ts"),
   read("../api/analyze.js"), read("../src/styles.css"),
-  read("../src/slabstax-shell.css"), read("../src/main.tsx"),
+  read("../src/styles.css"), read("../src/main.tsx"),
   read("../supabase/schema.sql"), read("../src/App.tsx"),
   read("../vite.config.ts"), read("../evaluation/cuad_to_calder_mapping.csv"),
   read("../evaluation/evaluate_cuad.py"),
@@ -79,7 +79,9 @@ test("mobile navigation is a dismissible drawer", () => {
 test("Calder palette and responsive authentication UI are active", () => {
   assert.match(shell, /--calder-text:\s*#17243a/);
   assert.match(shell, /--calder-accent:\s*#0b6676/);
-  assert.match(main, /import "\.\/slabstax-shell\.css"/);
+  assert.match(main, /import "\.\/styles\.css"/);
+  assert.equal((main.match(/import "\.\/[^"]+\.css"/g) || []).length, 1);
+  assert.match(styles, /Navigation shell and sign-in page/);
   assert.match(app, /className="auth-shell"/);
   assert.match(app, /className="auth-intro"/);
   assert.match(app, /Submitter access by default/);
