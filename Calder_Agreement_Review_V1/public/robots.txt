@@ -1,0 +1,7 @@
+# Search engines may crawl the public sign-in page.
+# The serverless API is not a page, so keep crawlers out of it.
+User-agent: *
+Allow: /
+Disallow: /api/
+
+Sitemap: https://capstonegroup3.vercel.app/sitemap.xml
