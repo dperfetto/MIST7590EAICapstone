@@ -2883,3 +2883,17 @@ body { overflow-x: hidden; }
     grid-column: 2;
   }
 }
+
+/* Keep the profile card and Sign out link fully visible at any window height.
+   The sidebar is exactly as tall as the window. When space runs short, only
+   the navigation list shrinks (and scrolls); the logo, collapse button and
+   profile card keep their natural size. */
+.sidebar > .brand,
+.sidebar > .sidebar-collapse,
+.sidebar > .sidebar-foot {
+  flex-shrink: 0 !important;
+}
+.sidebar > nav {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+}
