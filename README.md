@@ -142,6 +142,10 @@ where id = (select id from auth.users where email = 'you@example.com');
 
 Alternatively, edit the `role` column of your row in **Table Editor → profiles**. The dashboard bypasses row-level security, so either way works. After that, promote teammates from inside the app.
 
+#### Load demo data and one account per role (optional)
+
+To get a working account for each role and sample agreements in every review state, create four accounts through the app's sign-up page, put their emails at the top of `supabase/seed_demo.sql`, and run that file in the **SQL Editor**. It assigns Submitter, Reviewer, Approver and Administrator, and loads six demo agreements with findings, decisions, an escalation, a comment thread and audit history. It is safe to rerun and only replaces the demo agreements.
+
 Under plain `npm run dev`, **`/api/analyze` does not exist**: it is a Vercel serverless function, and Vite's dev server doesn't run those. **Automatic** analysis always falls back to deterministic here. That is expected, not a bug.
 
 ### Option C: Supabase plus the hosted AI path
@@ -189,6 +193,8 @@ npm run verify:ingestion -- "/absolute/path/to/contract.txt"
 The command reports file size, page count for PDFs, searchable character count, an extraction preview, and an accepted/rejected decision. The supplied `Contract 1.pdf` was verified at 146 pages and 225,021 searchable characters.
 
 ## 4. Deploy to Vercel (zero-dollar stack)
+
+These steps set up a new deployment. For every release after that (pre-deploy checks, schema changes, the post-deploy smoke test and rollback), follow [`docs/DEPLOYMENT_RUNBOOK.md`](Calder_Agreement_Review_V1/docs/DEPLOYMENT_RUNBOOK.md).
 
 1. Push the repository to GitHub, with exactly one application folder (`Calder_Agreement_Review_V1`).
 2. Import the repository into Vercel.
@@ -296,7 +302,7 @@ All paths are inside `Calder_Agreement_Review_V1/src/`.
 | AI evaluation results | `pages/evaluation/` |
 | Shared types, labels, date formatting | `workspace/types.ts`, `workspace/format.ts` |
 | Reading data / saving changes | `lib/queries.ts` / `lib/actions.ts` |
-| Demo-mode sample data | `lib/demoStore.ts` |
+| Demo-mode sample data | `lib/demoStore.ts` (Supabase demo data: `../supabase/seed_demo.sql`) |
 | Supabase connection | `lib/supabaseClient.ts` |
 | Analysis (keyword matching, AI calls) | `lib/analyze.ts`, `lib/candidateRetrieval.ts`, `lib/chunkText.ts`, and `../api/analyze.js` on the server |
 | All styles | `styles.css` |
@@ -306,6 +312,9 @@ All paths are inside `Calder_Agreement_Review_V1/src/`.
 All paths are inside `Calder_Agreement_Review_V1/`.
 
 - `docs/PROJECT_PLAN.md`: delivery plan and definition of done
+- `docs/DEPLOYMENT_RUNBOOK.md`: deploying, checking a release, rolling back, demo data and role accounts
+- `docs/KNOWN_ISSUES.md`: what Calder does not do well or at all, and the workaround for each
+- `docs/PLAYBOOK_MAINTENANCE.md`: who changes the playbook and standard positions, and how
 - `docs/Calder_Agreement_Review_Project_Plan.docx`: presentation-ready Word project plan with workflows, architecture, evaluation results, and deployment guidance
 - `docs/ARCHITECTURE_AND_WORKFLOW.md`: application, fallback, and evaluation flows
 - `docs/DOCUMENT_REVIEW_PATHS.md`: how AI, deterministic, and manual submissions are reviewed, and how confidence scores are calculated
