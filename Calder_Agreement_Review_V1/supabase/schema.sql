@@ -198,9 +198,18 @@ with check (
     )
   )
 );
+-- Reviewers decide open findings and may escalate them; only an Approver or
+-- Administrator may change a finding that is already escalated. USING is
+-- checked against the row as it stands, so a Reviewer can still move an open
+-- finding to escalated; WITH CHECK is explicit because it would otherwise
+-- default to the USING condition.
 drop policy if exists "Review team updates findings" on public.findings;
 create policy "Review team updates findings" on public.findings for update to authenticated
-using (public.current_user_role() in ('reviewer','approver','administrator'));
+using (
+  public.current_user_role() in ('reviewer','approver','administrator')
+  and (status <> 'escalated' or public.current_user_role() in ('approver','administrator'))
+)
+with check (public.current_user_role() in ('reviewer','approver','administrator'));
 drop policy if exists "Users read audit" on public.audit_events;
 create policy "Users read audit" on public.audit_events for select to authenticated
 using (auth.uid()=user_id or public.current_user_role() in ('reviewer','approver','administrator'));

@@ -20,6 +20,8 @@ Two conveniences sit on top of that workflow. **Bulk intake** (New intake → Bu
 
 **Playbook versioning and re-evaluation.** Switching a provision on or off in **Playbooks** creates the next numbered version for that contract type (shown under **Version history**), and every new agreement records the version it was analyzed under. An agreement reviewed under an older version shows a notice in the review queue listing the provisions added or removed since. **Re-evaluate** runs analysis for the added provisions only, on the stored file, and moves the agreement to the current version. Earlier findings and decisions are never changed; findings for provisions that were switched off are kept and labeled "No longer in playbook". Both features need the `finding_comments` and `playbook_versions` tables, so rerun `supabase/schema.sql` on an existing deployment.
 
+**Reporting.** Reporting shows queue volume, review health (open agreements within target, due in 48 hours, or overdue against their needed-by date) and review times: the median time from submission to the first decision and to a finished review, overall and by agreement type. Rerun `supabase/schema.sql` on an existing deployment to add the Approver-only rule for escalated findings.
+
 The baseline does not extract values, compare legal standards, characterize deviations, assign risk severity, or create gaps from categories not found. That work is deliberately deferred and preserved as disabled stretch metadata; see `docs/STRETCH_BACKLOG.md` and `docs/CHANGE_LOG.md` for why.
 
 ### Analysis and fallback order
@@ -50,7 +52,7 @@ The Requester selects one of Calder's procurement intake values; the application
 
 - **Submitter**: submit agreements and track outcomes.
 - **Reviewer**: Submitter access plus the review queue, manual findings, and accept, dismiss, or escalate actions.
-- **Approver**: Reviewer access plus the ability to resolve escalated items.
+- **Approver**: Reviewer access plus the ability to resolve escalated items. Row-level security enforces this: a Reviewer can escalate a finding but cannot change one that is already escalated.
 - **Administrator**: manage active playbook categories, roles, reporting, and audit history.
 
 Every new account starts as a Submitter. Only an Administrator can assign elevated roles. Supabase Auth hashes passwords and issues expiring sessions; database row-level security and stored functions enforce authorization on the server. Hiding navigation is only a usability layer, not the security boundary.

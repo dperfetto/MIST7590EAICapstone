@@ -1,5 +1,11 @@
 # Change log
 
+## 2026-10-25 - Review times and Approver-only escalations
+
+- Reporting now shows review times (median submission-to-first-decision and submission-to-completion, overall and by agreement type) and a review-health card computed from needed-by dates. The card previously showed fixed placeholder values.
+- Row-level security now blocks Reviewers from changing an escalated finding; before, only the screen enforced it.
+- Demo mode records decision times; the demo storage key changed, so demo data resets once.
+
 ## 2026-09-17 - V1.6.4 Safari submission compatibility
 
 - Replaced the static `Response.json()` calls in the browser-side workspace API bridge with the broadly supported `new Response(JSON.stringify(...))` pattern.

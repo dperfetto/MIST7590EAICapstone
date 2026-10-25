@@ -32,6 +32,9 @@ const reevaluationDetail = (body: Record<string, unknown>, label: string, create
 // New findings reopen the review; otherwise the status stands.
 const reevaluatedStatus = (current: string, created: number) =>
   created ? (current === "escalated" ? "escalated" : "in_review") : current;
+// Escalations go to an Approver; Reviewers can escalate but not resolve them.
+// schema.sql enforces the same rule on the server.
+const canResolveEscalation = (role: string) => ["approver", "administrator"].includes(role);
 const analysisRows = (body: Record<string, unknown>) =>
   Array.isArray(body.findings) ? (body.findings as any[]) : [];
 export async function performAction(body: Record<string, unknown>) {
@@ -106,9 +109,12 @@ export async function performAction(body: Record<string, unknown>) {
       const f = d.findings.find((x) => x.id === body.findingId);
       if (f?.status === "escalated" && body.decision === "escalated")
         throw new Error("An escalated finding must be accepted or dismissed.");
+      if (f?.status === "escalated" && !canResolveEscalation(d.me.role))
+        throw new Error("Only an Approver can resolve an escalated finding.");
       if (f) {
         f.status = String(body.decision);
         f.decisionReason = decisionReason;
+        f.decidedAt = now();
         const agreement = d.agreements.find((item) => item.id === f.agreementId);
         if (agreement) {
           const nextStatus = agreementReviewStatus(
@@ -341,6 +347,8 @@ export async function performAction(body: Record<string, unknown>) {
     if (q) throw q;
     if (f.status === "escalated" && body.decision === "escalated")
       throw new Error("An escalated finding must be accepted or dismissed.");
+    if (f.status === "escalated" && !canResolveEscalation(role))
+      throw new Error("Only an Approver can resolve an escalated finding.");
     const { error } = await supabase
       .from("findings")
       .update({

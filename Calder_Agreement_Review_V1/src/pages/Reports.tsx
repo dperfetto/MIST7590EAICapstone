@@ -1,18 +1,15 @@
 import { type Data } from "@/workspace/types";
-import { daysUntilDue } from "@/workspace/format";
 import { Kpi } from "@/components/Kpi";
 import { AlertTriangle, FileSearch, FileText, Gavel, ShieldCheck } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { agreementTypes } from "@/lib/model";
+import { formatHours, reviewHealth, reviewTimes } from "@/lib/reviewMetrics";
+import { type CSSProperties } from "react";
 
 export function Reports({ data }: { data: Data }) {
   const categories = [...new Set(data.findings.map((f) => f.provision))];
-  const overdue = data.agreements.filter(
-    (a) =>
-      (daysUntilDue(a.neededBy) ?? 0) < 0 &&
-      !a.status.startsWith("cleared") &&
-      !["approved", "review_complete"].includes(a.status),
-  );
+  const health = reviewHealth(data.agreements, data.findings);
+  const times = reviewTimes(data.agreements, data.findings);
   return (
     <>
       <section className="kpis">
@@ -92,32 +89,71 @@ export function Reports({ data }: { data: Data }) {
         <Card>
           <CardHeader>
             <CardTitle>Review health</CardTitle>
-            <p>Current agreement workload</p>
+            <p>Open agreements against their needed-by date</p>
           </CardHeader>
           <CardContent>
-            <div className="donut">
+            <div
+              className="donut"
+              style={{ "--within-target": `${health.percentWithinTarget ?? 0}%` } as CSSProperties}
+            >
               <div>
-                <strong>78%</strong>
+                <strong>{health.percentWithinTarget === null ? "—" : `${health.percentWithinTarget}%`}</strong>
                 <span>within target</span>
               </div>
             </div>
             <div className="health-list">
               <span>
                 <i className="dot green" />
-                Within target <b>7</b>
+                Within target <b>{health.withinTarget}</b>
               </span>
               <span>
                 <i className="dot amber" />
-                Due in 48 hours <b>2</b>
+                Due in 48 hours <b>{health.dueSoon}</b>
               </span>
               <span>
                 <i className="dot red" />
-                Overdue <b>{overdue.length}</b>
+                Overdue <b>{health.overdue}</b>
               </span>
             </div>
           </CardContent>
         </Card>
       </div>
+      <Card className="review-times-card">
+        <CardHeader>
+          <CardTitle>Review times</CardTitle>
+          <p>
+            From submission to the first recorded decision, and to the last
+            decision on a finished review. Medians, so one slow review does not
+            skew the figure.
+          </p>
+        </CardHeader>
+        <CardContent className="review-times">
+          <div className="health-list">
+            <span>
+              Median time to first decision <b>{formatHours(times.medianHoursToFirstDecision)}</b>
+            </span>
+            <span>
+              Median time to complete a review <b>{formatHours(times.medianHoursToComplete)}</b>
+            </span>
+            <span>
+              Reviews completed <b>{times.completed}</b>
+            </span>
+            <span>
+              Longest-waiting open agreement <b>{formatHours(times.oldestOpenHours)}</b>
+            </span>
+          </div>
+          {times.byType.length > 0 && (
+            <div className="health-list">
+              {times.byType.map((row) => (
+                <span key={row.agreementType}>
+                  {row.agreementType} ({row.completed} completed){" "}
+                  <b>{formatHours(row.medianHoursToComplete)}</b>
+                </span>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
       <Card>
         <CardHeader>
           <CardTitle>Presence identification coverage</CardTitle>
