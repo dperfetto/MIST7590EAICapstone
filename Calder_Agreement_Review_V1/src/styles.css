@@ -514,7 +514,7 @@ body {
   height: 138px;
   border-radius: 50%;
   margin: 4px auto 22px;
-  background: conic-gradient(var(--calder-accent) 0 78%, #e7edf2 78%);
+  background: conic-gradient(var(--calder-accent) 0 var(--within-target, 0%), #e7edf2 var(--within-target, 0%));
   display: grid;
   place-items: center;
   position: relative;
@@ -1162,6 +1162,15 @@ body {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   gap: 22px;
+  margin-bottom: 22px;
+}
+.review-times {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 10px 40px;
+  align-items: start;
+}
+.review-times-card {
   margin-bottom: 22px;
 }
 .bar-row {

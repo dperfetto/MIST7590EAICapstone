@@ -26,6 +26,7 @@ export type Finding = {
   reason: string;
   status: string;
   decisionReason?: string;
+  decidedAt?: string | null;
   analysisMethod?: string;
 };
 export type Rule = {

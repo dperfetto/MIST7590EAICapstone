@@ -28,6 +28,7 @@ const camelFinding = (r: any): Finding => ({
   reason: r.reason,
   status: r.status,
   decisionReason: r.decision_reason,
+  decidedAt: r.decided_at,
   analysisMethod: r.analysis_method,
 });
 const camelRule = (r: any): Rule => ({

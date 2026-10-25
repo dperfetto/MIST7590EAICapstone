@@ -1,6 +1,6 @@
 import { type Data } from "@/lib/model";
 
-const LOCAL_KEY = "calder-demo-v1-9";
+const LOCAL_KEY = "calder-demo-v1-10";
 export const now = () => new Date().toISOString();
 export const uid = () => crypto.randomUUID();
 const daysAgo = (days: number) => new Date(Date.now() - days * 86_400_000).toISOString();
@@ -21,7 +21,7 @@ const seed: Data = {
       filename: "Northstar-MSA.pdf",
       status: "in_review",
       playbookVersion: "Software Subscription v2",
-      createdAt: now(),
+      createdAt: daysAgo(3),
     },
     {
       id: "agr-1041",
@@ -32,7 +32,7 @@ const seed: Data = {
       filename: "Apex-PSA.pdf",
       status: "escalated",
       playbookVersion: "Professional Services v1",
-      createdAt: now(),
+      createdAt: daysAgo(5),
     },
     {
       id: "agr-1039",
@@ -43,7 +43,7 @@ const seed: Data = {
       filename: "Meridian-DPA.pdf",
       status: "ready_for_review",
       playbookVersion: "Data Processing Addendum v1",
-      createdAt: now(),
+      createdAt: daysAgo(1),
     },
     {
       id: "agr-1037",
@@ -54,7 +54,7 @@ const seed: Data = {
       filename: "BlueRidge-Services.pdf",
       status: "cleared_with_conditions",
       playbookVersion: "Professional Services v1",
-      createdAt: now(),
+      createdAt: daysAgo(9),
     },
     // Earlier Northstar agreements, so the review queue can show vendor history.
     {
@@ -117,6 +117,7 @@ const seed: Data = {
       reason: "Provision language identified and confirmed by a reviewer.",
       status: "accepted",
       decisionReason: "Supporting text confirms that the provision is present.",
+      decidedAt: daysAgo(2.6),
     },
     {
       id: "f-4",
@@ -130,6 +131,7 @@ const seed: Data = {
       reason: "Provision language identified for human verification.",
       status: "escalated",
       decisionReason: "Approver will verify the category and supporting text.",
+      decidedAt: daysAgo(4.2),
     },
     {
       id: "f-5",
@@ -155,6 +157,7 @@ const seed: Data = {
       reason: "Provision language identified for human verification.",
       status: "accepted",
       decisionReason: "Renewal notice period confirmed; added to the contract calendar.",
+      decidedAt: daysAgo(117),
     },
     {
       id: "f-7",
@@ -168,6 +171,7 @@ const seed: Data = {
       reason: "Provision language identified for human verification.",
       status: "accepted",
       decisionReason: "Twelve-month fee cap approved by Legal as standard for this vendor.",
+      decidedAt: daysAgo(116.5),
     },
     {
       id: "f-8",
@@ -181,6 +185,7 @@ const seed: Data = {
       reason: "Provision language identified for human verification.",
       status: "accepted",
       decisionReason: "Notice period confirmed against the signed MSA.",
+      decidedAt: daysAgo(328),
     },
     {
       id: "f-9",
@@ -194,6 +199,7 @@ const seed: Data = {
       reason: "Provision language identified for human verification.",
       status: "escalated",
       decisionReason: "Six-month cap is below our standard; Approver to confirm with Legal.",
+      decidedAt: daysAgo(327),
     },
     {
       id: "f-10",
@@ -206,6 +212,7 @@ const seed: Data = {
       reason: "Provision language identified for human verification.",
       status: "dismissed",
       decisionReason: "Clause refers to a superseded order form, not this agreement.",
+      decidedAt: daysAgo(326.5),
     },
   ],
   rules: [
