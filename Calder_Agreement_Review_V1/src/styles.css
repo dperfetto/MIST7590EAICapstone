@@ -2709,3 +2709,168 @@ body { overflow-x: hidden; }
     grid-template-columns: 1fr;
   }
 }
+
+/* Playbook changed since this review */
+.playbook-change {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  border: 1px solid #f0d9a8;
+  border-radius: 14px;
+  background: #fff9ec;
+  color: #5c4613;
+  font-size: 0.85rem;
+}
+.playbook-change > svg {
+  flex: none;
+  margin-top: 2px;
+  color: #b7791f;
+}
+.playbook-change > div {
+  flex: 1 1 260px;
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+.playbook-change span {
+  color: #745a1d;
+}
+.playbook-change .playbook-change-status {
+  color: #a12f2f;
+}
+.read-only-note {
+  margin: 0 0 16px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: #eef4f7;
+  color: #3d4b5d;
+  font-size: 0.83rem;
+}
+.decision.pending {
+  color: #6d7888;
+}
+
+/* Comment thread on a finding */
+.finding-thread {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid #eef2f6;
+}
+.finding-thread-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--calder-accent);
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.finding-thread-body {
+  display: grid;
+  gap: 10px;
+  margin-top: 10px;
+}
+.finding-thread-body ol {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.finding-thread-body li {
+  padding: 9px 12px;
+  border-radius: 10px;
+  border: 1px solid #e3e8ee;
+  background: #f7f9fb;
+}
+.finding-thread-body li.from-requester {
+  border-color: #c4dfe2;
+  background: #eef8f9;
+}
+.finding-thread-body li div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  align-items: baseline;
+  font-size: 0.8rem;
+}
+.finding-thread-body li div span {
+  color: #6d7888;
+  font-size: 0.74rem;
+}
+.finding-thread-body li p {
+  margin: 4px 0 0;
+  color: #3d4b5d;
+  font-size: 0.84rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.finding-thread-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.finding-thread-actions span {
+  color: #7a8798;
+  font-size: 0.76rem;
+}
+
+/* Playbook version history */
+.playbook-versions {
+  margin-top: 16px;
+}
+.playbook-versions-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 0.88rem;
+}
+.playbook-versions-head svg {
+  color: var(--calder-accent);
+}
+.playbook-versions-head span {
+  color: #6d7888;
+  font-size: 0.82rem;
+}
+.playbook-versions ol {
+  display: grid;
+  gap: 6px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.playbook-versions li {
+  display: grid;
+  grid-template-columns: 42px 1fr auto;
+  gap: 10px;
+  align-items: baseline;
+  padding: 7px 0;
+  border-bottom: 1px solid #eef2f6;
+  font-size: 0.84rem;
+}
+.playbook-versions li small {
+  color: #7a8798;
+}
+.playbook-versions-outdated {
+  margin: 12px 0 0;
+  color: #745a1d;
+  font-size: 0.83rem;
+}
+@media (max-width: 640px) {
+  .playbook-versions li {
+    grid-template-columns: 42px 1fr;
+  }
+  .playbook-versions li small {
+    grid-column: 2;
+  }
+}

@@ -1,10 +1,11 @@
-import { type Rule } from "@/workspace/types";
+import { type Agreement, type PlaybookVersion, type Rule } from "@/workspace/types";
+import { playbookChange, versionsFor } from "@/lib/playbookVersions";
 import { useState } from "react";
 import { agreementTypes } from "@/lib/model";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { HelpCircle, Settings2 } from "lucide-react";
+import { History, HelpCircle, Settings2 } from "lucide-react";
 import { taxonomyDescription } from "@/lib/candidateRetrieval";
 import { Switch } from "@/components/ui/switch";
 
@@ -37,13 +38,19 @@ const detectionMethodDefinitions = [
 ] as const;
 export function Playbook({
   rules,
+  versions,
+  agreements,
   update,
 }: {
   rules: Rule[];
+  versions: PlaybookVersion[];
+  agreements: Agreement[];
   update: (b: Record<string, unknown>) => Promise<boolean>;
 }) {
   const [tab, setTab] = useState<string>(agreementTypes[0]),
-    shown = rules.filter((r) => r.agreementType === tab);
+    shown = rules.filter((r) => r.agreementType === tab),
+    history = versionsFor(versions, tab),
+    outdated = agreements.filter((a) => a.agreementType === tab && playbookChange(versions, a));
   return (
     <>
       <div className="section-title">
@@ -116,6 +123,40 @@ export function Playbook({
               />
             </div>
           ))}
+        </CardContent>
+      </Card>
+      <Card className="playbook-versions">
+        <CardContent>
+          <div className="playbook-versions-head">
+            <History size={18} aria-hidden="true" />
+            <strong>Version history</strong>
+            <span>
+              {history.length
+                ? `${tab} is on v${history[0].version}. Switching a provision on or off creates the next version.`
+                : "Versions are recorded once schema.sql has been rerun."}
+            </span>
+          </div>
+          {history.length > 0 && (
+            <ol>
+              {history.map((v) => (
+                <li key={v.version}>
+                  <b>v{v.version}</b>
+                  <span>{v.summary}</span>
+                  <small>
+                    {v.changedBy} · {new Date(v.createdAt).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })} ·{" "}
+                    {v.activeProvisions.length} provisions
+                  </small>
+                </li>
+              ))}
+            </ol>
+          )}
+          {outdated.length > 0 && (
+            <p className="playbook-versions-outdated">
+              {outdated.length} agreement{outdated.length === 1 ? " was" : "s were"} reviewed under an earlier version (
+              {outdated.map((a) => a.id).join(", ")}). Reviewers can re-evaluate {outdated.length === 1 ? "it" : "them"} from the
+              review queue; earlier decisions are kept.
+            </p>
+          )}
         </CardContent>
       </Card>
       <div className="playbook-note">

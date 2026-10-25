@@ -1,3 +1,5 @@
+import { type FindingComment } from "@/lib/comments";
+import { type PlaybookVersion } from "@/lib/playbookVersions";
 import { type AnalysisPath, type UserRole } from "@/lib/model";
 
 export type Agreement = {
@@ -50,6 +52,10 @@ export type Data = {
   findings: Finding[];
   rules: Rule[];
   audit: Audit[];
+  comments: FindingComment[];
+  playbookVersions: PlaybookVersion[];
   aiStatus: string;
   users?: { id: string; name: string; role: UserRole }[];
 };
+
+export type { FindingComment, PlaybookVersion };

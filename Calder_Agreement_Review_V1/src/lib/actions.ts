@@ -3,6 +3,8 @@ import { currentUser, supabase } from "@/lib/supabaseClient";
 import { localRead, localWrite, now, uid } from "@/lib/demoStore";
 import { agreementReviewStatus, normalizeAnalysisPath, normalizeRole } from "@/lib/model";
 import { saveLocalFile } from "./agreementFiles";
+import { commentPreview, validateComment } from "./comments";
+import { latestVersion, nextVersion, versionLabel } from "./playbookVersions";
 
 // A manual confidence of 0 is a real value; only a missing or non-numeric
 // entry falls back to 100.
@@ -16,10 +18,28 @@ const manualFindingDetail = (body: Record<string, unknown>) =>
   body.sourceVerified
     ? `${body.provision} added; source text verified against the stored agreement.`
     : `${body.provision} added; source text could not be verified because the agreement file was unavailable.`;
+const reevaluationDetail = (body: Record<string, unknown>, label: string, created: number) => {
+  const strings = (value: unknown) => (Array.isArray(value) ? value : []).map(String);
+  const [added, checked, removed] = [strings(body.added), strings(body.checked), strings(body.removed)];
+  return [
+    `Re-evaluated under ${label}.`,
+    added.length ? `Added since the review: ${added.join(", ")}.` : "",
+    checked.length ? `Analysis checked ${checked.join(", ")}: ${created} new finding${created === 1 ? "" : "s"}.` : "",
+    removed.length ? `No longer in the playbook: ${removed.join(", ")} (earlier findings and decisions kept).` : "",
+    body.note ? String(body.note) : "",
+  ].filter(Boolean).join(" ");
+};
+// New findings reopen the review; otherwise the status stands.
+const reevaluatedStatus = (current: string, created: number) =>
+  created ? (current === "escalated" ? "escalated" : "in_review") : current;
+const analysisRows = (body: Record<string, unknown>) =>
+  Array.isArray(body.findings) ? (body.findings as any[]) : [];
 export async function performAction(body: Record<string, unknown>) {
   const decisionReason = String(body.reason ?? "").trim();
   if (body.action === "decide_finding" && !decisionReason)
     throw new Error("A reason is required for this decision.");
+  const comment = body.action === "add_comment" ? validateComment(body.body) : null;
+  if (comment && !comment.ok) throw new Error(comment.error);
   if (body.action === "add_manual_finding") {
     if (!taxonomy.some((entry) => entry.calderProvision === body.provision))
       throw new Error("Choose a provision from the playbook categories.");
@@ -49,7 +69,7 @@ export async function performAction(body: Record<string, unknown>) {
       localWrite(d);
       return;
     }
-    if ((body.action === "decide_finding" || body.action === "add_manual_finding") && !["reviewer", "approver", "administrator"].includes(d.me.role))
+    if (["decide_finding", "add_manual_finding", "reevaluate_agreement"].includes(String(body.action)) && !["reviewer", "approver", "administrator"].includes(d.me.role))
       throw new Error("Reviewer access required.");
     if (body.action === "update_rule" && d.me.role !== "administrator")
       throw new Error("Administrator access required.");
@@ -67,7 +87,10 @@ export async function performAction(body: Record<string, unknown>) {
         storageKey: String(body.storageKey || ""),
         analysisPath: normalizeAnalysisPath(body.analysisPath),
         status: String(body.status || "manual_review_required"),
-        playbookVersion: `${body.agreementType} v1`,
+        playbookVersion: versionLabel(
+          String(body.agreementType),
+          latestVersion(d.playbookVersions, String(body.agreementType))?.version ?? 1,
+        ),
         createdAt: now(),
       });
       d.audit.unshift({
@@ -171,7 +194,76 @@ export async function performAction(body: Record<string, unknown>) {
     }
     if (body.action === "update_rule") {
       const r = d.rules.find((x) => x.id === body.ruleId);
-      if (r) r.active = Boolean(body.active);
+      if (r && r.active !== Boolean(body.active)) {
+        r.active = Boolean(body.active);
+        const version = nextVersion(
+          d.playbookVersions,
+          r.agreementType,
+          d.rules.filter((rule) => rule.agreementType === r.agreementType && rule.active).map((rule) => rule.provision),
+          `${r.provision} switched ${r.active ? "on" : "off"}`,
+          actor,
+          now(),
+        );
+        d.playbookVersions.push(version);
+        d.audit.unshift({
+          id: uid(),
+          actorName: actor,
+          eventType: "Playbook updated",
+          detail: `${versionLabel(r.agreementType, version.version)}: ${version.summary}.`,
+          createdAt: now(),
+        });
+      }
+    }
+    if (body.action === "add_comment" && comment?.ok) {
+      const f = d.findings.find((x) => x.id === body.findingId);
+      if (!f) throw new Error("That finding no longer exists.");
+      d.comments.push({
+        id: uid(),
+        findingId: f.id,
+        agreementId: f.agreementId,
+        authorName: actor,
+        authorRole: d.me.role,
+        body: comment.body,
+        createdAt: now(),
+      });
+      d.audit.unshift({
+        id: uid(),
+        agreementId: f.agreementId,
+        actorName: actor,
+        eventType: "Comment added",
+        detail: `${f.provision}: ${commentPreview(comment.body)}`,
+        createdAt: now(),
+      });
+    }
+    if (body.action === "reevaluate_agreement") {
+      const agreement = d.agreements.find((x) => x.id === body.agreementId);
+      if (!agreement) throw new Error("That agreement no longer exists.");
+      const latest = latestVersion(d.playbookVersions, agreement.agreementType);
+      const label = versionLabel(agreement.agreementType, latest?.version ?? 1);
+      const rows = analysisRows(body);
+      for (const row of rows)
+        d.findings.unshift({
+          id: uid(),
+          agreementId: agreement.id,
+          provision: String(row.provision),
+          findingType: "present",
+          severity: "medium",
+          confidence: Number(row.confidence),
+          sourceText: String(row.sourceText),
+          reason: String(row.reason || "Provision language identified for human verification."),
+          status: "open",
+          analysisMethod: String(row.analysisMethod),
+        });
+      agreement.playbookVersion = label;
+      agreement.status = reevaluatedStatus(agreement.status, rows.length);
+      d.audit.unshift({
+        id: uid(),
+        agreementId: agreement.id,
+        actorName: actor,
+        eventType: "Agreement re-evaluated",
+        detail: reevaluationDetail(body, label, rows.length),
+        createdAt: now(),
+      });
     }
     localWrite(d);
     return;
@@ -205,7 +297,7 @@ export async function performAction(body: Record<string, unknown>) {
     if (error) throw error;
     return;
   }
-  if ((body.action === "decide_finding" || body.action === "add_manual_finding") && !["reviewer", "approver", "administrator"].includes(role))
+  if (["decide_finding", "add_manual_finding", "reevaluate_agreement"].includes(String(body.action)) && !["reviewer", "approver", "administrator"].includes(role))
     throw new Error("Reviewer access required.");
   if (body.action === "update_rule" && role !== "administrator")
     throw new Error("Administrator access required.");
@@ -226,7 +318,7 @@ export async function performAction(body: Record<string, unknown>) {
         storage_key: body.storageKey || null,
         analysis_path: normalizeAnalysisPath(body.analysisPath),
         status: body.status || "manual_review_required",
-        playbook_version: `${body.agreementType} v1`,
+        playbook_version: versionLabel(String(body.agreementType), await currentPlaybookVersion(String(body.agreementType))),
       });
     if (error) throw error;
     await supabase
@@ -363,12 +455,100 @@ export async function performAction(body: Record<string, unknown>) {
     return;
   }
   if (body.action === "update_rule") {
-    const { error } = await supabase
+    // The on_playbook_rule_toggled trigger records the new playbook version.
+    const { data: rule, error } = await supabase
       .from("playbook_rules")
       .update({ active: body.active })
-      .eq("id", body.ruleId);
+      .eq("id", body.ruleId)
+      .select("agreement_type,provision")
+      .single();
     if (error) throw error;
+    await supabase.from("audit_events").insert({
+      user_id: user.id,
+      actor_name: actor,
+      event_type: "Playbook updated",
+      detail: `${versionLabel(rule.agreement_type, await currentPlaybookVersion(rule.agreement_type))}: ${rule.provision} switched ${body.active ? "on" : "off"}.`,
+    });
+    return;
   }
+  if (body.action === "add_comment" && comment?.ok) {
+    const { data: f, error: q } = await supabase
+      .from("findings")
+      .select("agreement_id,provision")
+      .eq("id", body.findingId)
+      .single();
+    if (q) throw q;
+    const { error } = await supabase.from("finding_comments").insert({
+      finding_id: body.findingId,
+      agreement_id: f.agreement_id,
+      user_id: user.id,
+      author_name: actor,
+      author_role: role,
+      body: comment.body,
+    });
+    if (error) throw error;
+    await supabase.from("audit_events").insert({
+      agreement_id: f.agreement_id,
+      user_id: user.id,
+      actor_name: actor,
+      event_type: "Comment added",
+      detail: `${f.provision}: ${commentPreview(comment.body)}`,
+    });
+    return;
+  }
+  if (body.action === "reevaluate_agreement") {
+    const { data: agreement, error: q } = await supabase
+      .from("agreements")
+      .select("id,agreement_type,status")
+      .eq("id", body.agreementId)
+      .single();
+    if (q) throw q;
+    const label = versionLabel(agreement.agreement_type, await currentPlaybookVersion(agreement.agreement_type));
+    const rows = analysisRows(body).map((row: any) => ({
+      user_id: user.id,
+      agreement_id: agreement.id,
+      provision: row.provision,
+      finding_type: "present",
+      severity: "medium",
+      confidence: row.confidence,
+      source_text: row.sourceText,
+      reason: row.reason || "Provision language identified for human verification.",
+      status: "open",
+      analysis_method: row.analysisMethod,
+    }));
+    if (rows.length) {
+      const { error } = await supabase.from("findings").insert(rows);
+      if (error) throw error;
+    }
+    const { error } = await supabase
+      .from("agreements")
+      .update({
+        playbook_version: label,
+        status: reevaluatedStatus(agreement.status, rows.length),
+        updated_at: now(),
+      })
+      .eq("id", agreement.id);
+    if (error) throw error;
+    await supabase.from("audit_events").insert({
+      agreement_id: agreement.id,
+      user_id: user.id,
+      actor_name: actor,
+      event_type: "Agreement re-evaluated",
+      detail: reevaluationDetail(body, label, rows.length),
+    });
+  }
+}
+// The newest recorded version for a contract type; 1 until schema.sql adds
+// the playbook_versions table.
+async function currentPlaybookVersion(agreementType: string) {
+  const { data, error } = await supabase!
+    .from("playbook_versions")
+    .select("version")
+    .eq("agreement_type", agreementType)
+    .order("version", { ascending: false })
+    .limit(1);
+  if (error) return 1;
+  return data?.[0]?.version ?? 1;
 }
 export async function uploadPdf(file: File) {
   const supported =

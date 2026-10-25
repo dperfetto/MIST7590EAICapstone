@@ -1,6 +1,8 @@
 import { type Agreement, type Audit, type AuditPage, type Data, type EvaluationRun, type Finding, normalizeAnalysisPath, normalizeRole, type Rule } from "@/lib/model";
 import { currentUser, supabase } from "@/lib/supabaseClient";
 import { localRead } from "@/lib/demoStore";
+import { type FindingComment } from "@/lib/comments";
+import { type PlaybookVersion } from "@/lib/playbookVersions";
 
 const camelAgreement = (r: any): Agreement => ({
   id: r.id,
@@ -46,6 +48,31 @@ const camelAudit = (r: any): Audit => ({
   detail: r.detail,
   createdAt: r.created_at,
 });
+const camelComment = (r: any): FindingComment => ({
+  id: r.id,
+  findingId: r.finding_id,
+  agreementId: r.agreement_id,
+  authorName: r.author_name,
+  authorRole: r.author_role,
+  body: r.body,
+  createdAt: r.created_at,
+});
+const camelPlaybookVersion = (r: any): PlaybookVersion => ({
+  agreementType: r.agreement_type,
+  version: r.version,
+  activeProvisions: r.active_provisions || [],
+  summary: r.change_summary,
+  changedBy: r.changed_by_name,
+  createdAt: r.created_at,
+});
+// Tables added after the first release: until schema.sql is rerun they do not
+// exist, so read them as empty rather than failing the whole workspace.
+const missingTable = (error: any) => error?.code === "PGRST205" || error?.code === "42P01";
+const optionalRows = async (query: PromiseLike<{ data: any[] | null; error: any }>) => {
+  const { data, error } = await query;
+  if (error && !missingTable(error)) throw error;
+  return error ? [] : data || [];
+};
 export async function getAuditPage(
   page = 1,
   pageSize = 25,
@@ -141,7 +168,7 @@ export async function getEvaluations(): Promise<EvaluationRun[]> {
     // rather than failing the whole page.
     readAll("independent_check_results", ["run_id", "document", "provision", "version"]).catch(
       (error) => {
-        if (error?.code === "PGRST205" || error?.code === "42P01") return [];
+        if (missingTable(error)) return [];
         throw error;
       },
     ),
@@ -213,6 +240,10 @@ export async function getWorkspace(): Promise<Data> {
       .order("created_at", { ascending: false })
       .limit(100),
   ]);
+  const [comments, versions] = await Promise.all([
+    optionalRows(supabase.from("finding_comments").select("*").order("created_at")),
+    optionalRows(supabase.from("playbook_versions").select("*").order("version")),
+  ]);
   const failed = [profile, a, f, r, au].find((x) => x.error);
   if (failed?.error) throw failed.error;
   const assignedRole = normalizeRole(profile.data.role);
@@ -230,6 +261,8 @@ export async function getWorkspace(): Promise<Data> {
     findings: (f.data || []).map(camelFinding),
     rules: (r.data || []).map(camelRule),
     audit: (au.data || []).map(camelAudit),
+    comments: comments.map(camelComment),
+    playbookVersions: versions.map(camelPlaybookVersion),
     aiStatus: "manual-ready",
     users: (users.data || []).map((row) => ({
       id: row.id,

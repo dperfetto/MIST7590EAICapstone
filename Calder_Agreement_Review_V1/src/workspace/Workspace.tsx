@@ -156,7 +156,8 @@ export default function Workspace() {
     );
   const workspaceData = { ...data, agreements };
   const canSubmit = true;
-  const canReview = ["reviewer", "approver", "administrator"].includes(data.me.role);
+  // Submitters open the queue read-only for their own agreements.
+  const canOpenQueue = allowedViews[data.me.role].includes("queue");
   const visibleNavSections = navSections
     .map((section) => ({
       ...section,
@@ -282,7 +283,7 @@ export default function Workspace() {
           {view === "overview" && (
             <Overview
               data={workspaceData}
-              onQueue={() => setView(canReview ? "queue" : "agreements")}
+              onQueue={() => setView(canOpenQueue ? "queue" : "agreements")}
               onNavigate={(next) =>
                 setView(
                   allowedViews[data.me.role].includes(next) ? next : "overview",
@@ -290,14 +291,14 @@ export default function Workspace() {
               }
               onSelect={(id) => {
                 setSelected(id);
-                setView(canReview ? "queue" : "agreements");
+                setView(canOpenQueue ? "queue" : "agreements");
               }}
             />
           )}
           {view === "intake" && canSubmit && (
             <Intake busy={busy} submit={post} rules={data.rules} />
           )}{" "}
-          {view === "queue" && canReview && (
+          {view === "queue" && canOpenQueue && (
             <Queue
               data={workspaceData}
               selected={agreement}
@@ -317,13 +318,13 @@ export default function Workspace() {
               status={status}
               setStatus={setStatus}
               statuses={statuses}
-              onSelect={canReview ? (id) => {
+              onSelect={canOpenQueue ? (id) => {
                 setSelected(id);
                 setView("queue");
               } : undefined}
             />
           )}
-          {view === "playbook" && data.me.role === "administrator" && <Playbook rules={data.rules} update={post} />}{" "}
+          {view === "playbook" && data.me.role === "administrator" && <Playbook rules={data.rules} versions={data.playbookVersions} agreements={data.agreements} update={post} />}{" "}
           {view === "reports" && <Reports data={workspaceData} />} {" "}
           {view === "audit" && <AuditLog />}
           {view === "evaluation" && data.me.role === "administrator" && <Evaluation />}

@@ -16,6 +16,10 @@ For each active category in the Requester-declared contract-type playbook, Calde
 
 Two conveniences sit on top of that workflow. **Bulk intake** (New intake → Bulk intake) takes up to 20 PDF or TXT files at once: set the vendor, agreement type, business unit and needed-by date once, change any file that differs, and each file goes through the same checks as a single submission, one at a time, with its own progress line. **Vendor history** in the review queue lists the vendor's earlier agreements and how each provision was decided before, with the latest reason; vendor names match regardless of case, punctuation or a trailing "Inc."/"LLC". Neither changes the database.
 
+**Comment threads.** Each finding in the review queue has a discussion where the Requester who submitted the agreement and the review team can talk about it. Submitters open the review queue read-only, limited to their own agreements, so they can follow the review and reply without being able to decide findings. Comments go into the audit log and cannot be edited or deleted.
+
+**Playbook versioning and re-evaluation.** Switching a provision on or off in **Playbooks** creates the next numbered version for that contract type (shown under **Version history**), and every new agreement records the version it was analyzed under. An agreement reviewed under an older version shows a notice in the review queue listing the provisions added or removed since. **Re-evaluate** runs analysis for the added provisions only, on the stored file, and moves the agreement to the current version. Earlier findings and decisions are never changed; findings for provisions that were switched off are kept and labeled "No longer in playbook". Both features need the `finding_comments` and `playbook_versions` tables, so rerun `supabase/schema.sql` on an existing deployment.
+
 The baseline does not extract values, compare legal standards, characterize deviations, assign risk severity, or create gaps from categories not found. That work is deliberately deferred and preserved as disabled stretch metadata; see `docs/STRETCH_BACKLOG.md` and `docs/CHANGE_LOG.md` for why.
 
 ### Analysis and fallback order
@@ -104,7 +108,7 @@ Open `http://localhost:5173`. Demo data is saved in browser localStorage, so it 
 Use this to test real sign-up/sign-in, role-based access, row-level security, and shared data.
 
 1. Create a Supabase project.
-2. In **SQL Editor → New query**, paste and run the complete `supabase/schema.sql`. It creates the five tables (`profiles`, `agreements`, `findings`, `playbook_rules`, `audit_events`), row-level security policies, the `assign_user_role` function, private object storage, and seed playbook data. Existing v1.5 deployments must rerun it to migrate shorthand agreement types and allow the `present` finding type while retaining historical findings.
+2. In **SQL Editor → New query**, paste and run the complete `supabase/schema.sql`. It creates the core tables (`profiles`, `agreements`, `findings`, `playbook_rules`, `playbook_versions`, `finding_comments`, `audit_events`), row-level security policies, the `assign_user_role` function, private object storage, and seed playbook data. Existing v1.5 deployments must rerun it to migrate shorthand agreement types and allow the `present` finding type while retaining historical findings.
 3. Confirm **Email** auth is enabled under **Authentication → Providers** (on by default). Email verification, MFA, and account lockout are not required by the project. Password reset is built in: **Forgot password?** on the sign-in page emails a link that returns to the app to choose a new password.
 4. Under **Authentication → URL Configuration**, set **Site URL** to `http://localhost:5173` and add `http://localhost:5173` to **Redirect URLs**. If Site URL stays at Supabase's default `http://localhost:3000`, signup and password-reset emails link to a port nothing is running on; a reset link only returns to an address listed under Redirect URLs.
 5. Under **Project Settings → API**, copy the **Project URL** and the **anon / publishable** key. Never use the `service_role` key in this project.
@@ -284,7 +288,8 @@ All paths are inside `Calder_Agreement_Review_V1/src/`.
 | Menu items and which roles see each page | `workspace/navigation.ts` |
 | A page | `pages/` — `Overview.tsx`, `Agreements.tsx`, `Playbook.tsx`, `Reports.tsx`, `AuditLog.tsx`, `ProfileAccess.tsx` |
 | New intake (one agreement or bulk) | `pages/intake/` — `Intake.tsx`, `BulkIntake.tsx`, and `submitAgreement.ts` (the validate → upload → store → analyze steps both use) |
-| The review queue | `pages/review-queue/` — `Queue.tsx`, `AgreementDocument.tsx`, `ManualFinding.tsx`, `VendorHistory.tsx` |
+| The review queue | `pages/review-queue/` — `Queue.tsx`, `AgreementDocument.tsx`, `ManualFinding.tsx`, `VendorHistory.tsx`, `FindingThread.tsx` (comments), `PlaybookChange.tsx` (re-evaluation) |
+| Playbook versions, comment rules | `lib/playbookVersions.ts`, `lib/comments.ts` |
 | Vendor history (matching vendor names, tallying past decisions) | `lib/vendorHistory.ts` |
 | AI evaluation results | `pages/evaluation/` |
 | Shared types, labels, date formatting | `workspace/types.ts`, `workspace/format.ts` |

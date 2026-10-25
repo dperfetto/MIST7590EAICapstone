@@ -1,3 +1,5 @@
+import { type FindingComment } from "@/lib/comments";
+import { type PlaybookVersion } from "@/lib/playbookVersions";
 
 
 export type UserRole = "submitter" | "reviewer" | "approver" | "administrator";
@@ -128,6 +130,8 @@ export type Data = {
   findings: Finding[];
   rules: Rule[];
   audit: Audit[];
+  comments: FindingComment[];
+  playbookVersions: PlaybookVersion[];
   aiStatus: string;
   users?: UserProfile[];
 };

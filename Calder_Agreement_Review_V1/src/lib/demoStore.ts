@@ -1,6 +1,6 @@
 import { type Data } from "@/lib/model";
 
-const LOCAL_KEY = "calder-demo-v1-8";
+const LOCAL_KEY = "calder-demo-v1-9";
 export const now = () => new Date().toISOString();
 export const uid = () => crypto.randomUUID();
 const daysAgo = (days: number) => new Date(Date.now() - days * 86_400_000).toISOString();
@@ -20,7 +20,7 @@ const seed: Data = {
       neededBy: "2026-09-08",
       filename: "Northstar-MSA.pdf",
       status: "in_review",
-      playbookVersion: "Software Subscription v1",
+      playbookVersion: "Software Subscription v2",
       createdAt: now(),
     },
     {
@@ -515,6 +515,27 @@ const seed: Data = {
     severity: r[5],
     active: true,
   })),
+  comments: [
+    {
+      id: "c-1",
+      findingId: "f-2",
+      agreementId: "agr-1042",
+      authorName: "Priya Shah",
+      authorRole: "submitter",
+      body: "Legal approved a twelve-month cap with Northstar last spring. This draft says six months. Can we push back before accepting?",
+      createdAt: daysAgo(2),
+    },
+    {
+      id: "c-2",
+      findingId: "f-2",
+      agreementId: "agr-1042",
+      authorName: "Jordan Lee",
+      authorRole: "administrator",
+      body: "Agreed. The six-month cap was escalated on the 2025 MSA too. I'll hold this finding until procurement hears back from the vendor.",
+      createdAt: daysAgo(1),
+    },
+  ],
+  playbookVersions: [],
   audit: [
     {
       id: uid(),
@@ -534,6 +555,30 @@ const seed: Data = {
     },
   ],
 };
+// Version 1 of every playbook, plus a v2 for Software Subscription when
+// Exclusivity was switched on, so the older Northstar reviews show as
+// reviewed under an earlier playbook.
+const activeFor = (agreementType: string, skip?: string) =>
+  seed.rules
+    .filter((rule) => rule.agreementType === agreementType && rule.provision !== skip)
+    .map((rule) => rule.provision)
+    .sort();
+seed.playbookVersions = [...new Set(seed.rules.map((rule) => rule.agreementType))].map((agreementType) => ({
+  agreementType,
+  version: 1,
+  activeProvisions: activeFor(agreementType, agreementType === "Software Subscription" ? "Exclusivity" : undefined),
+  summary: "Initial playbook",
+  changedBy: "System",
+  createdAt: daysAgo(400),
+}));
+seed.playbookVersions.push({
+  agreementType: "Software Subscription",
+  version: 2,
+  activeProvisions: activeFor("Software Subscription"),
+  summary: "Exclusivity switched on",
+  changedBy: "Jordan Lee",
+  createdAt: daysAgo(30),
+});
 const cloneSeed = () => JSON.parse(JSON.stringify(seed)) as Data;
 export function localRead() {
   const raw = localStorage.getItem(LOCAL_KEY);
