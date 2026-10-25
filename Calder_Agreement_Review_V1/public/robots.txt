@@ -4,4 +4,4 @@ User-agent: *
 Allow: /
 Disallow: /api/
 
-Sitemap: https://capstonegroup3.vercel.app/sitemap.xml
+Sitemap: https://mist-7590-eai-capstone.vercel.app/sitemap.xml

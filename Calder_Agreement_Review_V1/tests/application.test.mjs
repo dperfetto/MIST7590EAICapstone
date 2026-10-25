@@ -481,7 +481,7 @@ test("search engines get a sitemap and robots.txt that list only public pages", 
   const robots = await read("../public/robots.txt");
   assert.match(sitemap, /<urlset xmlns="http:\/\/www\.sitemaps\.org\/schemas\/sitemap\/0\.9">/);
   const locs = [...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]);
-  assert.deepEqual(locs, ["https://capstonegroup3.vercel.app/"]);
-  assert.match(robots, /^Sitemap: https:\/\/capstonegroup3\.vercel\.app\/sitemap\.xml$/m);
+  assert.deepEqual(locs, ["https://mist-7590-eai-capstone.vercel.app/"]);
+    assert.match(robots, /^Sitemap: https:\/\/mist-7590-eai-capstone\.vercel\.app\/sitemap\.xml$/m);
   assert.match(robots, /^Disallow: \/api\/$/m);
 });
