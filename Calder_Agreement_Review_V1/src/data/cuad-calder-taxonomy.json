@@ -17,7 +17,7 @@
       "description": "Automatic or unilateral extension of the agreement after the initial term.",
       "exclusions": ["Do not label the initial term or a renewal that requires a new mutual agreement; the extension must be automatic or exercisable by one party."],
       "contractTypes": ["Software Subscription", "Licensing", "Other"],
-      "candidatePhrases": ["automatically renew", "automatic renewal", "successive renewal", "renewal term", "shall renew", "extended for successive", "renew for an additional"]
+      "candidatePhrases": ["automatically renew", "automatic renewal", "successive renewal", "renewal term", "shall renew", "extended for successive", "renew for an additional", "automatically extend", "automatically be extended", "renew automatically", "extend for an additional", "extend for successive"]
     },
     {
       "calderProvision": "Notice to Terminate Renewal",
@@ -25,7 +25,7 @@
       "description": "Advance notice required to prevent or terminate a renewal.",
       "exclusions": ["Do not label a general termination notice period unless the text ties the notice to renewal or expiration."],
       "contractTypes": ["Software Subscription", "Licensing", "Other"],
-      "candidatePhrases": ["notice of non-renewal", "notice not to renew", "terminate renewal", "prior to renewal", "before expiration", "days prior written notice", "months prior written notice"]
+      "candidatePhrases": ["notice of non-renewal", "notice not to renew", "terminate renewal", "prior to renewal", "before expiration", "days prior written notice", "months prior written notice", "prior to the expiration of the then", "before the end of the then", "intention not to renew"]
     },
     {
       "calderProvision": "Governing Law",

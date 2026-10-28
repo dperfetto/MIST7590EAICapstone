@@ -9,16 +9,19 @@ debatable — not just computing a score against them.
 ## A note on access
 
 The brief describes "the CUAD Labeling Handbook" (atticusprojectai.org/labeling-handbook) as the
-source of category definitions. In practice, that page is a table of contents only — the detailed
-inclusion/exclusion guidance is gated behind a purchasable download ("Full clause guidelines are
-included in the purchasable handbook download"). We did not purchase it. Instead, we used
-`category_descriptions.csv` from the official CUAD GitHub repository
-(github.com/The-Atticus-Project/cuad), which is free, public, and is the same question-level
-definition CUAD's own annotators were working from (it supplies the exact question text paired
-with each category in the dataset itself). This is a real scoping note worth logging: our
-taxonomy's `exclusions` field (`src/data/cuad-calder-taxonomy.json`) is more detailed than CUAD's
-one-sentence official definitions, because it was also informed by reading actual labeled spans —
-which is exactly what this spot-check does below.
+source of category definitions. When this spot-check was first written, the team had only that
+web page, which shows a table of contents, so it worked from `category_descriptions.csv` in the
+official CUAD GitHub repository (github.com/The-Atticus-Project/cuad): one or two sentences per
+category.
+
+On 2026-10-28 the team obtained the full handbook (personal-use edition, "as of September 9,
+2021", 95 pages), which gives IS and IS NOT rules with examples for each label. The findings below
+were re-checked against it and cited by page. It is marked "personal use only", so it is not copied
+into this repository. It covers most of Calder's categories but has no section for Cap on
+Liability or Warranty Duration, so those two still rest on the shorter official definitions.
+
+Checking against it reversed two of the original conclusions (Exclusivity and Termination for
+Convenience): what looked like inconsistent labels turned out to follow the handbook's rules.
 
 ## Method
 
@@ -29,7 +32,7 @@ pulled 2–3 real, randomly sampled positive examples directly from `CUAD_v1.jso
 
 ## Findings
 
-### Exclusivity — the most debatable category we found
+### Exclusivity — CUAD's definition is broader than Calder's
 
 > **Official definition:** "Is there an exclusive dealing commitment with the counterparty? This
 > includes a commitment to procure all 'requirements' from one party... or a prohibition on
@@ -47,21 +50,32 @@ Three real examples labeled positive for Exclusivity:
    or otherwise use ... the Content via the internet to Universities and College students in the
    People's Republic of China **except for the benefit of the COMPANY**."
 
-**This surprised us.** Only example 3 is a genuine exclusive-dealing commitment under CUAD's own
-definition — a party agreeing not to deal with others. Examples 1 and 2 are ordinary **IP license
-grants** that happen to use the word "exclusive" to describe the license itself (nobody else gets
-the same license), not a commitment restricting either party's ability to work with third parties
-generally. This is precisely the distinction Calder's own taxonomy warns about
-(`cuad-calder-taxonomy.json`: "Do not label an exclusive remedy, an exclusive jurisdiction clause,
-or an intellectual-property license merely because it uses the word exclusive"), and finding it
-baked into CUAD's own ground truth — not just in Calder's detector — reframes what Exclusivity's
-poor measured precision (0.44, the worst of all 10 categories, `evaluation/results/metrics.csv`)
-actually means. It isn't only that Calder's deterministic matcher is too loose; the category itself
-spans two legally distinct concepts (exclusive dealing vs. exclusive licensing) under one label,
-and CUAD's own annotators didn't draw that line consistently in the spans we sampled. The Section
-6.3 independent check hit the exact same failure mode independently
-(`evaluation/independent-check/RESULTS.md`, `commonpaper-software-license`), which is reassuring —
-it means this is a real, reproducible property of the category, not a one-off reading of two spans.
+**This surprised us at first, and the handbook explains it.** Example 3 is an exclusive-dealing
+commitment. Examples 1 and 2 are **IP license grants** that use the word "exclusive" to describe the
+license itself. The short official definition reads as if only exclusive dealing counts, so we
+first concluded that examples 1 and 2 were labeling inconsistencies.
+
+**Corrected 2026-10-28:** they are not. The handbook's first rule for Exclusivity is "An exclusive
+license should be labeled", with the example "Party A hereby grants Party B an irrevocable, fully
+paid, exclusive license" (p. 31). Co-exclusive licenses count too (p. 32). CUAD labels exclusive
+licenses on purpose.
+
+This section originally said CUAD's annotators "didn't draw that line consistently" and that the
+category "spans two legally distinct concepts". The second half is right; the first is not. The
+accurate statement is that **Calder's taxonomy defines Exclusivity more narrowly than CUAD does**:
+Calder's exclusion ("Do not label ... an intellectual-property license merely because it uses the
+word exclusive") removes something CUAD deliberately includes.
+
+Two consequences. First, Exclusivity's low keyword precision (0.44,
+`evaluation/results/metrics.csv`) is not explained by label noise: flags on exclusive licenses count
+as correct under CUAD's rules, so the wrong flags come from the keyword "exclusive" firing in
+contracts CUAD says have no exclusivity at all. Second, CUAD's Exclusivity scores measure CUAD's
+broader category, not Calder's: by Calder's own definition, flags on exclusive licenses would be
+wrong, and an AI that follows Calder's exclusion will skip clauses CUAD counts as found. The
+narrower definition may be the right one for Calder, which cares about exclusive-dealing
+commitments, but it should be recorded as a playbook choice, not as a CUAD flaw. The Section 6.3 independent check found the same matcher
+failure on an unmodified document (`evaluation/independent-check/RESULTS.md`,
+`commonpaper-software-license`).
 
 ### Cap on Liability — one debatable example out of three
 
@@ -80,20 +94,27 @@ with dollar/time caps even though they're different mechanisms. Calder's own tax
 anticipates this ("Do not label a list of uncapped-liability exceptions unless the same span also
 states a cap"), but this confirms the risk is real in the ground truth, not hypothetical.
 
-### Termination for Convenience — labels that require context the span alone doesn't show
+### Termination for Convenience — the plain notice form counts
 
 > **Official definition:** "Can a party terminate this contract without cause (solely by giving a
 > notice and allowing a waiting period to expire)?"
 
 One sampled example — "LICENSEE may terminate this Agreement upon ninety (90) days written
-notice" — contains no "without cause" or "for any reason" language at all. Standing alone, a
-90-day notice-to-terminate clause is also consistent with a *for-cause* termination right.
-CUAD's annotators evidently had enough surrounding contract context to know this one was actually
-unconditional, but the labeled span itself doesn't carry that evidence. This matters for Calder
-specifically: our deterministic candidate phrases (`"for any reason"`, `"without cause"`, `"at any
-time upon"`) would **not** fire on this exact wording, meaning a real termination-for-convenience
-clause drafted this plainly would be a silent miss — consistent with what Section 6.2's error
-analysis below finds for this category.
+notice" — contains no "without cause" or "for any reason" language. We first concluded the
+annotators must have used surrounding context the labeled span doesn't show.
+
+**Corrected 2026-10-28:** the handbook makes this label straightforward. It calls a notice the
+"signature" of this clause, and its standard example is "Either party may terminate this Agreement
+upon 30 days written notice" (p. 26). It also counts a right to revoke a license, stop a service or
+terminate an order "at any time" without cause (p. 27). One of its examples, "Company at its sole
+discretion may at any time alter or cease providing the Customer Service...", is the FreeCook
+clause the team's manual testing recorded as missed.
+
+This still matters for Calder: our candidate phrases (`"for any reason"`, `"without cause"`, `"at
+any time upon"`) look for without-cause wording, so a plainly drafted notice clause like the one
+above is a silent miss. The handbook also explains a source of wrong flags: Termination for
+Convenience and Notice to Terminate Renewal look alike, and the difference is whether the notice
+can cut a term short or only ends the contract at the end of a term (p. 23–24).
 
 ### Renewal Term — "extend" is a common synonym CUAD accepts that our phrases don't catch
 
@@ -103,9 +124,11 @@ automatically **extend** for an additional [...] year period"; "the contract wil
 Renewal Term (`"automatically renew"`, `"automatic renewal"`, `"shall renew"`, `"extended for
 successive"`, `"renew for an additional"`) do not include a bare `"automatically extend"` or
 `"extend for an additional"` phrasing. This is a concrete, actionable finding, not just a
-theoretical gap — it directly explains part of Renewal Term's measured 61.9% recall
-(`evaluation/results/metrics.csv`) and is a specific, low-effort fix: add `"automatically extend"`
-and `"extend for an additional"` to the candidate phrase list.
+theoretical gap — it directly explained part of Renewal Term's measured 61.9% recall. The handbook
+confirms it: "extend" and "extension" are keywords for this label (p. 19), and its examples include
+"shall automatically extend". **Fixed 2026-10-28:** five phrases were added (`"automatically
+extend"`, `"automatically be extended"`, `"renew automatically"`, `"extend for an additional"`,
+`"extend for successive"`), raising recall to 67.6% with precision moving from 91.6% to 89.5%.
 
 ### Audit Rights — the labels themselves are clean
 
@@ -117,16 +140,33 @@ because Audit Rights has Calder's **worst measured recall (31.8%)** — this spo
 (candidate phrases too narrow for how audit clauses are actually drafted), not a labeling artifact,
 which is a materially different conclusion than what we found for Exclusivity.
 
+### Checked against the handbook: Notice to Terminate Renewal, Audit Rights, Change of Control
+
+- **Notice to Terminate Renewal:** the handbook's examples use "before the end of the then current
+  term" and "prior to the expiration of the then-current term" (p. 23), which our phrases lacked.
+  Three phrases were added on 2026-10-28, raising recall from 39.6% to 55.0% and precision from
+  41.5% to 49.6%.
+- **Audit Rights:** the handbook confirms the labels are broad but consistent. It counts the right
+  to inspect books, records or facilities, clauses on audit cost and process, and obligations to
+  send financial statements (p. 76–78), while excluding a bare duty to keep records. Our phrases
+  cover only the first of these, which fits the 31.8% recall.
+- **Change of Control:** the handbook counts restrictions on assignment "by operation of law" as
+  Change of Control (p. 74–75), and excludes assignment restrictions that merely apply "in
+  connection with" a change of control. `evaluation/CATEGORY_RELIABILITY.md` had said the opposite
+  about "operation of law" and was corrected.
+
 ## What this changes
 
-- Exclusivity and, to a lesser extent, Cap on Liability have a real amount of **label-level**
-  ambiguity baked into CUAD itself, not just detector weakness. Their precision/recall numbers
-  should be read as somewhat noisier than other categories' for that reason, independent of
-  anything Calder does.
+- Exclusivity's CUAD scores measure CUAD's **broader definition**, not label noise: CUAD includes
+  exclusive licenses and Calder's taxonomy excludes them. Counsel should decide which definition
+  Calder's playbook uses. Cap on Liability's consequential-damages example remains debatable; the
+  handbook has no Cap on Liability section to settle it.
+- Termination for Convenience labels are consistent with the handbook; the gap is in Calder's
+  phrases, which miss the plain "may terminate upon 30 days written notice" form.
 - Audit Rights' poor recall has no such excuse — the labels are clean, so the fix has to be in the
   candidate phrases or in moving the category toward hosted extraction.
-- Two concrete, low-effort phrase additions are now backed by real examples: `"automatically
-  extend"` / `"extend for an additional"` for Renewal Term, and the existing exclusion language for
-  Exclusivity needs to actually be enforced somewhere (today it only exists as a comment in the
+- The Renewal Term and Notice to Terminate Renewal phrase additions were made and measured on
+  2026-10-28 (see above). The existing exclusion language for Exclusivity still needs to be
+  enforced somewhere (today it only exists as a comment in the
   taxonomy JSON; the deterministic matcher has no mechanism to apply it — see
   `evaluation/independent-check/RESULTS.md` for the concrete false positive this produces).
