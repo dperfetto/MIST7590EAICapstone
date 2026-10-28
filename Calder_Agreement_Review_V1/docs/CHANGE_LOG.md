@@ -1,5 +1,12 @@
 # Change log
 
+## 2026-10-28 - Evaluation re-checked against the CUAD Labeling Handbook
+
+- Obtained the full CUAD Labeling Handbook (personal-use edition, as of September 9, 2021). It is cited by page in the evaluation notes but not copied into the repository.
+- Corrected two spot-check conclusions: CUAD labels exclusive licenses as Exclusivity on purpose, and a plain "may terminate upon 30 days written notice" clause is a standard Termination for Convenience label. Neither is label noise. Corrected the Change of Control explanation, since the handbook counts restrictions on assignment by operation of law.
+- Added keyword phrases based on the handbook's wording and error analysis: five for Renewal Term (recall 0.62 to 0.68, precision 0.92 to 0.89) and three for Notice to Terminate Renewal (recall 0.40 to 0.55, precision 0.42 to 0.50). Micro recall across the ten categories rose from 70.2% to 71.6%. The independent check is unchanged (16 of 24) and was not used to choose phrases.
+- The AI check set was not rerun. Its find and wrong-flag counts do not depend on these phrases, but which AI findings score 90 rather than 75 can change slightly, because the keyword rules are used to corroborate AI findings.
+
 ## 2026-10-25 - Review times and Approver-only escalations
 
 - Reporting now shows review times (median submission-to-first-decision and submission-to-completion, overall and by agreement type) and a review-health card computed from needed-by dates. The card previously showed fixed placeholder values.

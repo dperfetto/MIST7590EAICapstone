@@ -59,8 +59,8 @@ gitignored and not present in every environment — but it is real, measured dat
 
 **How much does the system miss entirely — find nothing at all?** This is recall, from the
 committed CUAD evaluation (`evaluation/results/metrics.csv`, 510 contracts): **micro recall is
-70.2%** across the 10 active categories (1,361 of 1,938 expert-labeled positive instances found).
-That means roughly **three in ten** provisions the playbook is looking for, and that is actually
+71.6%** across the 10 active categories (1,388 of 1,938 expert-labeled positive instances found).
+That means a little under **three in ten** provisions the playbook is looking for, and that is actually
 present in a submitted agreement, never generates a finding at all — not a low-confidence finding,
 no finding. This is uneven across categories, not a flat 30%:
 
@@ -70,12 +70,15 @@ no finding. This is uneven across categories, not a flat 30%:
 | Exclusivity | 97.8% | 2.2% |
 | Change of Control | 90.1% | 9.9% |
 | Termination for Convenience | 70.0% | 30.0% |
+| Renewal Term | 67.6% | 32.4% |
 | Insurance | 67.5% | 32.5% |
-| Renewal Term | 61.9% | 38.1% |
+| Notice to Terminate Renewal | 55.0% | 45.0% |
 | Cap on Liability | 54.6% | 45.5% |
 | Warranty Duration | 38.7% | 61.3% |
-| Notice to Terminate Renewal | 39.6% | 60.4% |
 | **Audit Rights** | **31.8%** | **68.2%** |
+
+Renewal Term and Notice to Terminate Renewal were re-measured on 2026-10-28 after phrase additions
+(before: 61.9% and 39.6%); see `evaluation/CATEGORY_RELIABILITY.md`.
 
 The Section 6.3 independent check corroborates this is not a CUAD-specific artifact: of 12
 deliberately edited clauses in hand-picked, well-formatted standard-form agreements, the Bonterms
@@ -92,9 +95,9 @@ improve recall; only better candidate phrases, hosted extraction, or manual fall
 Directly: **rely on it for triage, not for completeness.** Every finding requires your or a
 reviewer's sign-off regardless of its confidence score — the system never auto-clears anything, so
 a high-confidence finding is not a finding you can skip. What the confidence score cannot tell you
-is what never made it into the queue. On the categories currently in scope, roughly three in ten
-present provisions generates no finding at all, concentrated heavily in Audit Rights, Renewal
-Notice, Warranty Duration, and Cap on Liability — if a DPA has a real audit-rights problem, this
+is what never made it into the queue. On the categories currently in scope, a little under three in
+ten present provisions generates no finding at all, concentrated heavily in Audit Rights, Warranty
+Duration, Cap on Liability and Notice to Terminate Renewal — if a DPA has a real audit-rights problem, this
 system is worse than a coin flip at surfacing it on its own. Governing Law, Exclusivity, and Change of
 Control are close to complete, though Exclusivity and Change of Control also over-flag heavily.
 

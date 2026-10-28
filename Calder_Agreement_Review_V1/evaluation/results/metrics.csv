@@ -1,7 +1,7 @@
 provision,tp,fp,fn,tn,positive_contracts,precision,recall,f1
 Cap on Liability,150,7,125,228,275,0.9554,0.5455,0.6944
-Renewal Term,109,10,67,324,176,0.916,0.6193,0.739
-Notice to Terminate Renewal,44,62,67,337,111,0.4151,0.3964,0.4055
+Renewal Term,119,14,57,320,176,0.8947,0.6761,0.7702
+Notice to Terminate Renewal,61,62,50,337,111,0.4959,0.5495,0.5214
 Governing Law,436,24,1,49,437,0.9478,0.9977,0.9721
 Exclusivity,176,228,4,102,180,0.4356,0.9778,0.6027
 Termination for Convenience,128,145,55,182,183,0.4689,0.6995,0.5614
