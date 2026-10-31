@@ -35,7 +35,6 @@ export function Playbook({
         <p>
           Every contract type lists all {provisionOrder.length} provisions.
           Switch on the ones Calder should look for in that type of agreement.
-          The baseline records presence, source text, and confidence only.
         </p>
       </div>
       <Tabs value={tab} onValueChange={setTab}>
