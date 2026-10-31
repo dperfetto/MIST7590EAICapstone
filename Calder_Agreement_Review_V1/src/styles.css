@@ -1152,6 +1152,65 @@ body {
 .review-times-card {
   margin-bottom: 22px;
 }
+.report-table-card {
+  margin-bottom: 22px;
+}
+.report-table-scroll {
+  overflow-x: auto;
+}
+.report-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+.report-table th,
+.report-table td {
+  text-align: left;
+  padding: 10px 12px 10px 0;
+  border-top: 1px solid #e7edf3;
+  vertical-align: top;
+}
+.report-table thead th {
+  border-top: 0;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #718096;
+  white-space: nowrap;
+}
+.report-table tbody th {
+  font-weight: 600;
+  min-width: 170px;
+}
+.report-table td {
+  white-space: nowrap;
+}
+.report-table td.report-wrap {
+  white-space: normal;
+  min-width: 220px;
+}
+.report-table tr.muted {
+  color: #a0aec0;
+}
+.report-share,
+.report-sub {
+  color: #718096;
+  font-size: 0.78rem;
+  font-weight: 400;
+}
+.report-share {
+  margin-left: 6px;
+}
+.report-sub {
+  display: block;
+  margin-top: 2px;
+}
+.report-table-note {
+  margin: 12px 0 0;
+  font-size: 0.78rem;
+  color: #718096;
+}
 .bar-row {
   display: grid;
   grid-template-columns: 160px 1fr 30px;
@@ -2255,43 +2314,16 @@ body { overflow-x: hidden; }
 .auth-logo strong { display: block; font-size: 1.2rem; letter-spacing: -0.01em; }
 .auth-logo small { display: block; margin-top: 2px; color: #b9d2dc; font-size: 0.79rem; }
 
-.auth-copy { margin: auto 0 38px; }
-.auth-eyebrow,
-.auth-step {
-  display: inline-block;
-  color: #72d7df;
-  font-size: 0.73rem;
-  font-weight: 800;
-  letter-spacing: 0.13em;
-}
+.auth-copy { margin: auto 0; }
 .auth-copy h1 {
   max-width: 470px;
-  margin: 18px 0 18px;
+  margin: 0 0 18px;
   color: #fff;
   font-size: clamp(2.35rem, 4vw, 3.55rem);
   line-height: 1.02;
   letter-spacing: -0.045em;
 }
 .auth-copy p { max-width: 475px; margin: 0; color: #c5d8df; font-size: 1.05rem; line-height: 1.65; }
-
-.auth-benefits { display: grid; gap: 10px; }
-.auth-benefits > div {
-  display: flex;
-  align-items: center;
-  gap: 13px;
-  padding: 13px 14px;
-  color: #eaf6f8;
-  background: rgba(255, 255, 255, 0.075);
-  border: 1px solid rgba(255, 255, 255, 0.11);
-  border-radius: 13px;
-}
-.auth-benefits svg { flex: 0 0 auto; width: 20px; color: #60d3dc; }
-.auth-benefits strong,
-.auth-benefits small { display: block; }
-.auth-benefits strong { font-size: 0.9rem; }
-.auth-benefits small { margin-top: 2px; color: #b9d2dc; font-size: 0.77rem; }
-.auth-intro-foot { display: flex; align-items: center; gap: 7px; margin: 22px 0 0; color: #b9d2dc; font-size: 0.75rem; }
-.auth-intro-foot svg { color: #5be0ae; }
 
 .auth-card {
   display: flex;
@@ -2302,8 +2334,7 @@ body { overflow-x: hidden; }
 }
 .auth-mobile-logo { display: none; }
 .auth-card header { margin-bottom: 29px; }
-.auth-step { color: #0b6676; }
-.auth-card h2 { margin: 10px 0 8px; color: #17243a; font-size: 2rem; line-height: 1.1; letter-spacing: -0.035em; }
+.auth-card h2 { margin: 0 0 8px; color: #17243a; font-size: 2rem; line-height: 1.1; letter-spacing: -0.035em; }
 .auth-card header p { margin: 0; color: #68788b; font-size: 0.93rem; line-height: 1.55; }
 .auth-card form { display: grid; gap: 18px; }
 .auth-field { display: grid; gap: 7px; }
@@ -2321,21 +2352,6 @@ body { overflow-x: hidden; }
 }
 .auth-field input::placeholder { color: #94a2b2; }
 .auth-field input:focus { background: #fff; border-color: #13889a; box-shadow: 0 0 0 4px rgba(19, 136, 154, 0.12); }
-.auth-role-note {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  padding: 12px 13px;
-  color: #285566;
-  background: #edf8f9;
-  border: 1px solid #c9e7e9;
-  border-radius: 11px;
-}
-.auth-role-note svg { flex: 0 0 auto; margin-top: 1px; color: #0b7787; }
-.auth-role-note strong,
-.auth-role-note small { display: block; }
-.auth-role-note strong { font-size: 0.8rem; }
-.auth-role-note small { margin-top: 2px; color: #607987; font-size: 0.73rem; }
 .auth-link { justify-self: end; margin-top: -8px; padding: 0; border: 0; background: none; color: #0b6676; font-size: 0.8rem; font-weight: 650; cursor: pointer; }
 .auth-link:hover { text-decoration: underline; }
 .auth-message { padding: 11px 13px; color: #30576a; background: #f1f6f8; border-left: 3px solid #168799; border-radius: 7px; font-size: 0.81rem; line-height: 1.45; }

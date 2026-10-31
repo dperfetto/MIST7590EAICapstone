@@ -4,7 +4,7 @@ import { authLinkError, connected, openedFromRecoveryLink, supabase } from "./li
 import { Button } from "./components/ui/button";
 import { Input } from "./components/ui/input";
 import { Label } from "./components/ui/label";
-import { CheckCircle2, FileSearch, Gavel, ShieldCheck } from "lucide-react";
+import { Gavel } from "lucide-react";
 
 const MIN_PASSWORD_LENGTH = 8;
 
@@ -27,14 +27,12 @@ function AuthFrame({children}:{children:ReactNode}){
     <section className="auth-shell">
       <aside className="auth-intro">
         <div className="auth-logo"><span><Gavel size={23}/></span><div><strong>Calder</strong><small>Agreement Review</small></div></div>
-        <div className="auth-copy"><span className="auth-eyebrow">CONTROLLED CONTRACT TRIAGE</span><h1>Review the agreements that need attention.</h1><p>Turn inbound vendor contracts into source-linked findings, human decisions, and a durable audit record.</p></div>
-        <div className="auth-benefits"><div><FileSearch/><span><strong>Evidence first</strong><small>Every finding points back to its source.</small></span></div><div><ShieldCheck/><span><strong>Human controlled</strong><small>Automation never makes the final decision.</small></span></div></div>
-        <p className="auth-intro-foot"><CheckCircle2 size={15}/> Deterministic and manual review remain available without AI.</p>
+        <div className="auth-copy"><h1>Review vendor agreements.</h1><p>Calder finds key provisions and links each one to its source. Your team makes every decision.</p></div>
       </aside>
       <section className="auth-card" aria-labelledby="auth-title">
         <div className="auth-mobile-logo"><span><Gavel size={20}/></span><strong>Calder</strong></div>
         {children}
-        <p className="auth-privacy">Protected workspace • Authorized users only</p>
+        <p className="auth-privacy">Authorized users only</p>
       </section>
     </section>
   </main>;
@@ -42,9 +40,9 @@ function AuthFrame({children}:{children:ReactNode}){
 
 type AuthMode="signin"|"create"|"reset";
 const authCopy:Record<AuthMode,{title:string;lead:string;action:string}>={
-  signin:{title:"Welcome back",lead:"Sign in to submit, review, and track vendor agreements.",action:"Sign in"},
-  create:{title:"Create your account",lead:"Start with Submitter access and securely expand permissions through an Administrator.",action:"Create account"},
-  reset:{title:"Reset your password",lead:"Enter the email address for your account and we'll send you a link to choose a new password.",action:"Send reset link"},
+  signin:{title:"Welcome back",lead:"Sign in to your workspace.",action:"Sign in"},
+  create:{title:"Create your account",lead:"New accounts start with Submitter access. An Administrator can change your role.",action:"Create account"},
+  reset:{title:"Reset your password",lead:"We'll email you a link to choose a new password.",action:"Send reset link"},
 };
 
 function SignIn({notice="",startMode="signin"}:{notice?:string;startMode?:AuthMode}){const[email,setEmail]=useState(""),[password,setPassword]=useState(""),[name,setName]=useState(""),[mode,setMode]=useState<AuthMode>(startMode),[message,setMessage]=useState(notice),[busy,setBusy]=useState(false);
@@ -63,13 +61,12 @@ function SignIn({notice="",startMode="signin"}:{notice?:string;startMode?:AuthMo
     setBusy(false)};
   const copy=authCopy[mode];
   return <AuthFrame>
-    <header><span className="auth-step">SECURE WORKSPACE</span><h2 id="auth-title">{copy.title}</h2><p>{copy.lead}</p></header>
+    <header><h2 id="auth-title">{copy.title}</h2><p>{copy.lead}</p></header>
     <form onSubmit={(event)=>{event.preventDefault();void submit()}}>
       {mode==="create"&&<div className="auth-field"><Label htmlFor="full-name">Full name</Label><Input id="full-name" autoComplete="name" value={name} onChange={e=>setName(e.target.value)} placeholder="Enter your full name"/></div>}
       <div className="auth-field"><Label htmlFor="email">Email address</Label><Input id="email" type="email" autoComplete="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="you@company.com"/></div>
       {mode!=="reset"&&<div className="auth-field"><Label htmlFor="password">Password</Label><Input id="password" type="password" autoComplete={mode==="create"?"new-password":"current-password"} value={password} onChange={e=>setPassword(e.target.value)} placeholder="Enter your password"/></div>}
       {mode==="signin"&&<button type="button" className="auth-link" onClick={()=>switchMode("reset")}>Forgot password?</button>}
-      {mode==="create"&&<div className="auth-role-note"><ShieldCheck size={17}/><span><strong>Submitter access by default</strong><small>Only an Administrator can change role permissions.</small></span></div>}
       {message&&<div className="auth-message" role="status">{message}</div>}
       <Button className="auth-primary" type="submit" disabled={busy||!email||(mode!=="reset"&&!password)||(mode==="create"&&!name)}>{busy?"Please wait…":copy.action}</Button>
     </form>
@@ -81,7 +78,7 @@ function SetNewPassword({onDone}:{onDone:()=>void}){const[password,setPassword]=
   const tooShort=password.length>0&&password.length<MIN_PASSWORD_LENGTH,mismatch=confirm.length>0&&confirm!==password;
   const submit=async()=>{setBusy(true);setMessage("");const {error}=await supabase!.auth.updateUser({password});setBusy(false);if(error){setMessage(error.message);return}onDone()};
   return <AuthFrame>
-    <header><span className="auth-step">SECURE WORKSPACE</span><h2 id="auth-title">Set a new password</h2><p>Choose a new password for your Calder account. You'll go straight to your workspace afterwards.</p></header>
+    <header><h2 id="auth-title">Set a new password</h2><p>You'll go straight to your workspace afterwards.</p></header>
     <form onSubmit={(event)=>{event.preventDefault();void submit()}}>
       <div className="auth-field"><Label htmlFor="new-password">New password</Label><Input id="new-password" type="password" autoComplete="new-password" value={password} onChange={e=>setPassword(e.target.value)} placeholder={`At least ${MIN_PASSWORD_LENGTH} characters`}/></div>
       <div className="auth-field"><Label htmlFor="confirm-password">Confirm new password</Label><Input id="confirm-password" type="password" autoComplete="new-password" value={confirm} onChange={e=>setConfirm(e.target.value)} placeholder="Enter it again"/></div>

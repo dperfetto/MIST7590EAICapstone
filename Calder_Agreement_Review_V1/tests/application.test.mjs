@@ -84,7 +84,7 @@ test("Calder palette and responsive authentication UI are active", () => {
   assert.match(styles, /Navigation shell and sign-in page/);
   assert.match(app, /className="auth-shell"/);
   assert.match(app, /className="auth-intro"/);
-  assert.match(app, /Submitter access by default/);
+  assert.match(app, /New accounts start with Submitter access/);
   assert.match(shell, /\.auth-card\s*\{/);
 });
 
