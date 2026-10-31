@@ -1,5 +1,19 @@
 # Change log
 
+## 2026-10-31 - Reporting: presence coverage and vendor history
+
+- **Presence identification coverage** now shows, for each of the ten provisions, how many agreements were checked for it, how many were flagged (and what share), how many a reviewer confirmed, and how many flags were dismissed or are awaiting a decision. "Checked" uses the playbook version each agreement was analyzed under, so switching a provision on later does not change what older agreements count as checked. It replaces a placeholder card.
+- **Vendor history** lists every vendor with its agreement count, agreement types, last submission, the provisions reviewers confirmed across its agreements, dismissed flags and findings awaiting a decision. Vendor names are matched as in the review queue.
+- Sign-in page simplified: the left panel is now the logo, a short headline and one sentence (the tagline label, two feature boxes and the footnote were removed), and the sign-in, create-account and reset forms use shorter headings and lines.
+- Calculations are in `provisionCoverage` (`src/lib/playbookVersions.ts`) and `vendorSummaries` (`src/lib/vendorHistory.ts`), with unit tests.
+
+## 2026-10-31 - Administrators can remove accounts
+
+- Profile & access has a **Remove** button for every account except your own, with a confirmation dialog.
+- An account with no agreements, decisions, comments or audit history is deleted. Any other account is deactivated, because the database never lets review records lose their user: the account is banned from signing in, every role check fails for it, and its name stays on past records. A deactivated account shows **Reactivate**, which restores its previous role.
+- Each removal or reactivation is written to the audit log by the database (`remove_user_account`, `reactivate_user_account` in `schema.sql`). Rerun `schema.sql` on existing deployments. Demo data resets once and now includes sample users.
+- Profile & access: the name card now says what the name is used for and that earlier records keep the old name, and **Save name** is disabled until the name changes. Administrators see a "What each role can do" guide under the user list, built from the same list as the Current access card, which now shows that roles build on each other.
+
 ## 2026-10-31 - Every provision listed for every agreement type; Method column removed
 
 - Every agreement type's playbook now lists all ten provisions. The 33 provisions a type did not have before were added switched off (`rule-38` to `rule-70`), so an Administrator can switch one on in the app, and that is recorded as a new version. Existing rules and their on/off settings are unchanged, and no new version is created by the upgrade.

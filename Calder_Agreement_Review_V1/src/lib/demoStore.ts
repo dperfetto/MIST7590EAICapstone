@@ -1,17 +1,26 @@
 import { agreementTypes, type Data } from "@/lib/model";
 import { taxonomy } from "@/lib/candidateRetrieval";
 
-const LOCAL_KEY = "calder-demo-v1-11";
+const LOCAL_KEY = "calder-demo-v1-12";
 export const now = () => new Date().toISOString();
 export const uid = () => crypto.randomUUID();
 const daysAgo = (days: number) => new Date(Date.now() - days * 86_400_000).toISOString();
 const seed: Data = {
   me: {
+    id: "demo-admin",
     name: "Jordan Lee",
     email: "demo.admin@calder.example",
     role: "administrator",
   },
   aiStatus: "manual-ready",
+  // Priya has review history, so removing her deactivates the account; the
+  // others have none and are deleted.
+  users: [
+    { id: "demo-admin", name: "Jordan Lee", role: "administrator" },
+    { id: "demo-reviewer", name: "Priya Shah", role: "reviewer" },
+    { id: "demo-approver", name: "Marcus Reed", role: "approver" },
+    { id: "demo-submitter", name: "Alex Morgan", role: "submitter" },
+  ],
   agreements: [
     {
       id: "agr-1042",

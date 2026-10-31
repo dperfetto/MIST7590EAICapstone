@@ -90,3 +90,48 @@ export function provisionSummary(row?: ProvisionHistory) {
   ];
   return parts.join("; ");
 }
+
+// Reporting: one row per vendor across all of its agreements.
+type SummaryAgreement = { id: string; vendor: string; agreementType: string; createdAt: string };
+
+export type VendorSummary = {
+  vendor: string;
+  agreements: number;
+  agreementTypes: string[];
+  lastSubmitted: string;
+  /** Findings still open or escalated. */
+  awaiting: number;
+  dismissed: number;
+  /** Provisions a reviewer accepted, most often first. */
+  confirmed: { provision: string; agreements: number }[];
+};
+
+/** One row per vendor (names matched as in the review queue's vendor history), most agreements first. */
+export function vendorSummaries<A extends SummaryAgreement>(agreements: A[], findings: HistoryFinding[]): VendorSummary[] {
+  const groups = new Map<string, A[]>();
+  for (const a of agreements) {
+    const key = vendorKey(a.vendor);
+    groups.set(key, [...(groups.get(key) ?? []), a]);
+  }
+  return [...groups.values()]
+    .map((group) => {
+      const newest = [...group].sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0];
+      const ids = new Set(group.map((a) => a.id));
+      const own = findings.filter((f) => ids.has(f.agreementId));
+      const confirmedBy = new Map<string, Set<string>>();
+      for (const f of own.filter((f) => f.status === "accepted"))
+        confirmedBy.set(f.provision, (confirmedBy.get(f.provision) ?? new Set()).add(f.agreementId));
+      return {
+        vendor: newest.vendor,
+        agreements: group.length,
+        agreementTypes: [...new Set(group.map((a) => a.agreementType))].sort(),
+        lastSubmitted: newest.createdAt,
+        awaiting: own.filter((f) => f.status === "open" || f.status === "escalated").length,
+        dismissed: own.filter((f) => f.status === "dismissed").length,
+        confirmed: [...confirmedBy]
+          .map(([provision, set]) => ({ provision, agreements: set.size }))
+          .sort((a, b) => b.agreements - a.agreements || a.provision.localeCompare(b.provision)),
+      };
+    })
+    .sort((a, b) => b.agreements - a.agreements || b.lastSubmitted.localeCompare(a.lastSubmitted));
+}

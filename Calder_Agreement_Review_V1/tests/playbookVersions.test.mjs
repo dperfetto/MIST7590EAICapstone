@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { latestVersion, nextVersion, playbookChange, versionLabel, versionNumber } from "../src/lib/playbookVersions.ts";
+import { latestVersion, nextVersion, playbookChange, provisionCoverage, versionLabel, versionNumber } from "../src/lib/playbookVersions.ts";
 import { commentPreview, MAX_COMMENT_LENGTH, validateComment } from "../src/lib/comments.ts";
 
 const v = (version, activeProvisions, agreementType = "Software Subscription") => ({
@@ -55,4 +55,30 @@ test("comments are trimmed, must not be blank and have a length limit", () => {
   assert.equal(validateComment("x".repeat(MAX_COMMENT_LENGTH + 1)).ok, false);
   assert.equal(commentPreview("short"), "short");
   assert.equal(commentPreview("x".repeat(200)).length, 120);
+});
+
+test("coverage counts agreements checked under the version they were analyzed with", () => {
+  const versions = [
+    { agreementType: "Mutual NDA", version: 1, activeProvisions: ["Governing Law"] },
+    { agreementType: "Mutual NDA", version: 2, activeProvisions: ["Cap on Liability", "Governing Law"] },
+  ];
+  const agreements = [
+    { id: "a", agreementType: "Mutual NDA", playbookVersion: "Mutual NDA v1" },
+    { id: "b", agreementType: "Mutual NDA", playbookVersion: "Mutual NDA v2" },
+    { id: "c", agreementType: "Other", playbookVersion: "Other v1" }, // no version history
+  ];
+  const findings = [
+    { agreementId: "a", provision: "Governing Law", status: "accepted" },
+    { agreementId: "a", provision: "Governing Law", status: "dismissed" },
+    { agreementId: "b", provision: "Cap on Liability", status: "open" },
+    { agreementId: "c", provision: "Insurance", status: "escalated" }, // a manual finding counts as checked
+    { agreementId: "gone", provision: "Insurance", status: "accepted" }, // unknown agreement is ignored
+  ];
+  const [cap, law, insurance, audit] = provisionCoverage(
+    ["Cap on Liability", "Governing Law", "Insurance", "Audit Rights"], agreements, findings, versions,
+  );
+  assert.deepEqual(cap, { provision: "Cap on Liability", checked: 1, flagged: 1, confirmed: 0, dismissed: 0, awaiting: 1 });
+  assert.deepEqual(law, { provision: "Governing Law", checked: 2, flagged: 1, confirmed: 1, dismissed: 1, awaiting: 0 });
+  assert.deepEqual(insurance, { provision: "Insurance", checked: 1, flagged: 1, confirmed: 0, dismissed: 0, awaiting: 1 });
+  assert.equal(audit.checked, 0);
 });

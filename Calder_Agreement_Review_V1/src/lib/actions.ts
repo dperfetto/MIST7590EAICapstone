@@ -72,6 +72,32 @@ export async function performAction(body: Record<string, unknown>) {
       localWrite(d);
       return;
     }
+    // Mirrors remove_user_account in schema.sql: delete an account with no
+    // history, otherwise deactivate it. Demo records carry names, not user ids.
+    if (body.action === "remove_user" || body.action === "reactivate_user") {
+      if (d.me.role !== "administrator") throw new Error("Administrator access required.");
+      if (body.userId === d.me.id) throw new Error("You cannot remove your own account.");
+      const target = d.users?.find((user) => user.id === body.userId);
+      if (!target) throw new Error("Account not found.");
+      const hasHistory =
+        d.audit.some((event) => event.actorName === target.name) ||
+        d.comments.some((comment) => comment.authorName === target.name);
+      let eventType = "Account reactivated";
+      let detail = `${target.name}'s account was reactivated with its previous role.`;
+      if (body.action === "reactivate_user") target.deactivated = false;
+      else if (hasHistory) {
+        target.deactivated = true;
+        eventType = "Account deactivated";
+        detail = `${target.name}'s account was deactivated. It has review history, so it was kept for the record and can no longer sign in.`;
+      } else {
+        d.users = d.users?.filter((user) => user.id !== target.id);
+        eventType = "Account deleted";
+        detail = `${target.name}'s account was deleted. It had no agreements, decisions or audit history.`;
+      }
+      d.audit.unshift({ id: uid(), actorName: actor, eventType, detail, createdAt: now() });
+      localWrite(d);
+      return;
+    }
     if (["decide_finding", "add_manual_finding", "reevaluate_agreement"].includes(String(body.action)) && !["reviewer", "approver", "administrator"].includes(d.me.role))
       throw new Error("Reviewer access required.");
     if (body.action === "update_rule" && d.me.role !== "administrator")
@@ -300,6 +326,15 @@ export async function performAction(body: Record<string, unknown>) {
       target_user: body.userId,
       new_role: normalizeRole(body.role),
     });
+    if (error) throw error;
+    return;
+  }
+  if (body.action === "remove_user" || body.action === "reactivate_user") {
+    if (role !== "administrator") throw new Error("Administrator access required.");
+    const { error } = await supabase.rpc(
+      body.action === "remove_user" ? "remove_user_account" : "reactivate_user_account",
+      { target_user: body.userId },
+    );
     if (error) throw error;
     return;
   }

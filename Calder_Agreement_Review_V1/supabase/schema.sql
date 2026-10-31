@@ -9,6 +9,11 @@ create table if not exists public.profiles (
   updated_at timestamptz not null default now()
 );
 
+-- Set when an Administrator removes an account that has history (see
+-- remove_user_account below). A deactivated account keeps its name on past
+-- records but has no role and cannot sign in.
+alter table public.profiles add column if not exists deactivated_at timestamptz;
+
 create or replace function public.handle_new_user()
 returns trigger language plpgsql security definer set search_path = public as $$
 begin
@@ -31,7 +36,7 @@ from auth.users on conflict (id) do nothing;
 
 create or replace function public.current_user_role()
 returns text language sql stable security definer set search_path = public as $$
-  select coalesce((select role from public.profiles where id = auth.uid()), 'submitter');
+  select coalesce((select case when deactivated_at is null then role else 'deactivated' end from public.profiles where id = auth.uid()), 'submitter');
 $$;
 
 create or replace function public.assign_user_role(target_user uuid, new_role text)
@@ -50,6 +55,65 @@ end; $$;
 revoke update on public.profiles from authenticated;
 grant update (full_name, updated_at) on public.profiles to authenticated;
 grant execute on function public.assign_user_role(uuid,text) to authenticated;
+
+-- Removing an account. An account with no history is deleted. Agreements,
+-- findings, comments, audit events and playbook versions all refuse to lose
+-- their user (on delete restrict), so if the delete is blocked the account is
+-- deactivated instead: it is banned from signing in, current_user_role()
+-- returns 'deactivated' so every role check fails, and its name stays on the
+-- records. Returns 'deleted' or 'deactivated'.
+create or replace function public.remove_user_account(target_user uuid)
+returns text language plpgsql security definer set search_path = public as $$
+declare
+  target_name text;
+  actor text := coalesce((select full_name from public.profiles where id = auth.uid()), 'Administrator');
+begin
+  if public.current_user_role() <> 'administrator' then
+    raise exception 'Administrator access required';
+  end if;
+  if target_user = auth.uid() then
+    raise exception 'You cannot remove your own account';
+  end if;
+  select coalesce(nullif(full_name, ''), 'Unnamed user') into target_name from public.profiles where id = target_user;
+  if not found then
+    raise exception 'Account not found';
+  end if;
+  begin
+    delete from auth.users where id = target_user;
+    insert into public.audit_events (user_id, actor_name, event_type, detail)
+    values (auth.uid(), actor, 'Account deleted', target_name || '''s account was deleted. It had no agreements, decisions or audit history.');
+    return 'deleted';
+  exception when foreign_key_violation then
+    update public.profiles set deactivated_at = now(), updated_at = now() where id = target_user;
+    update auth.users set banned_until = now() + interval '100 years' where id = target_user;
+    insert into public.audit_events (user_id, actor_name, event_type, detail)
+    values (auth.uid(), actor, 'Account deactivated', target_name || '''s account was deactivated. It has review history, so it was kept for the record and can no longer sign in.');
+    return 'deactivated';
+  end;
+end; $$;
+
+create or replace function public.reactivate_user_account(target_user uuid)
+returns void language plpgsql security definer set search_path = public as $$
+declare
+  target_name text;
+  actor text := coalesce((select full_name from public.profiles where id = auth.uid()), 'Administrator');
+begin
+  if public.current_user_role() <> 'administrator' then
+    raise exception 'Administrator access required';
+  end if;
+  update public.profiles set deactivated_at = null, updated_at = now()
+  where id = target_user and deactivated_at is not null
+  returning coalesce(nullif(full_name, ''), 'Unnamed user') into target_name;
+  if not found then
+    raise exception 'Account is not deactivated';
+  end if;
+  update auth.users set banned_until = null where id = target_user;
+  insert into public.audit_events (user_id, actor_name, event_type, detail)
+  values (auth.uid(), actor, 'Account reactivated', target_name || '''s account was reactivated with its previous role.');
+end; $$;
+
+grant execute on function public.remove_user_account(uuid) to authenticated;
+grant execute on function public.reactivate_user_account(uuid) to authenticated;
 
 create table if not exists public.agreements (
   id text primary key,

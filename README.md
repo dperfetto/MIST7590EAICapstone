@@ -53,7 +53,7 @@ The Requester selects one of Calder's procurement intake values; the application
 - **Submitter**: submit agreements and track outcomes.
 - **Reviewer**: Submitter access plus the review queue, manual findings, and accept, dismiss, or escalate actions.
 - **Approver**: Reviewer access plus the ability to resolve escalated items. Row-level security enforces this: a Reviewer can escalate a finding but cannot change one that is already escalated.
-- **Administrator**: manage active playbook categories, roles, reporting, and audit history.
+- **Administrator**: manage active playbook categories, roles, reporting, and audit history, and remove accounts. Removing an account with no history deletes it; an account with history is deactivated instead (it can no longer sign in, its name stays on past records, and it can be reactivated).
 
 Every new account starts as a Submitter. Only an Administrator can assign elevated roles. Supabase Auth hashes passwords and issues expiring sessions; database row-level security and stored functions enforce authorization on the server. Hiding navigation is only a usability layer, not the security boundary.
 
