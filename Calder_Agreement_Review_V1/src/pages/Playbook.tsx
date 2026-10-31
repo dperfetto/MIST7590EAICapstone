@@ -4,7 +4,7 @@ import { useState } from "react";
 import { agreementTypes } from "@/lib/model";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
-import { History, Settings2 } from "lucide-react";
+import { History } from "lucide-react";
 import { taxonomy, taxonomyDescription } from "@/lib/candidateRetrieval";
 import { Switch } from "@/components/ui/switch";
 
@@ -105,17 +105,6 @@ export function Playbook({
           )}
         </CardContent>
       </Card>
-      <div className="playbook-note">
-        <Settings2 size={20} />
-        <div>
-          <strong>Presence-only baseline</strong>
-          <span>
-            Prior standard-position, severity, deviation, and gap work is
-            preserved as disabled stretch-backlog metadata. It is not used to
-            create baseline findings.
-          </span>
-        </div>
-      </div>
     </>
   );
 }
