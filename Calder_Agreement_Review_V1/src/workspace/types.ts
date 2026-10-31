@@ -35,7 +35,6 @@ export type Rule = {
   provision: string;
   applicability: string;
   standard: string;
-  method: string;
   severity: string;
   active: boolean;
 };

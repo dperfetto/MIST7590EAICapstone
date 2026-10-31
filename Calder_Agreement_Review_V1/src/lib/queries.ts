@@ -37,7 +37,6 @@ const camelRule = (r: any): Rule => ({
   provision: r.provision,
   applicability: r.applicability,
   standard: r.standard,
-  method: r.method,
   severity: r.severity,
   active: r.active,
 });
