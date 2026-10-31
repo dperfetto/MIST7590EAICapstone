@@ -1152,65 +1152,6 @@ body {
 .review-times-card {
   margin-bottom: 22px;
 }
-.report-table-card {
-  margin-bottom: 22px;
-}
-.report-table-scroll {
-  overflow-x: auto;
-}
-.report-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.85rem;
-}
-.report-table th,
-.report-table td {
-  text-align: left;
-  padding: 10px 12px 10px 0;
-  border-top: 1px solid #e7edf3;
-  vertical-align: top;
-}
-.report-table thead th {
-  border-top: 0;
-  font-size: 0.72rem;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: #718096;
-  white-space: nowrap;
-}
-.report-table tbody th {
-  font-weight: 600;
-  min-width: 170px;
-}
-.report-table td {
-  white-space: nowrap;
-}
-.report-table td.report-wrap {
-  white-space: normal;
-  min-width: 220px;
-}
-.report-table tr.muted {
-  color: #a0aec0;
-}
-.report-share,
-.report-sub {
-  color: #718096;
-  font-size: 0.78rem;
-  font-weight: 400;
-}
-.report-share {
-  margin-left: 6px;
-}
-.report-sub {
-  display: block;
-  margin-top: 2px;
-}
-.report-table-note {
-  margin: 12px 0 0;
-  font-size: 0.78rem;
-  color: #718096;
-}
 .bar-row {
   display: grid;
   grid-template-columns: 160px 1fr 30px;

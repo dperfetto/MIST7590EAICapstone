@@ -5,24 +5,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { agreementTypes } from "@/lib/model";
 import { formatHours, reviewHealth, reviewTimes } from "@/lib/reviewMetrics";
 import { type CSSProperties } from "react";
-import { taxonomy } from "@/lib/candidateRetrieval";
-import { provisionCoverage } from "@/lib/playbookVersions";
-import { vendorSummaries } from "@/lib/vendorHistory";
-
-const shortDate = (iso: string) =>
-  new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
 
 export function Reports({ data }: { data: Data }) {
   const categories = [...new Set(data.findings.map((f) => f.provision))];
   const health = reviewHealth(data.agreements, data.findings);
   const times = reviewTimes(data.agreements, data.findings);
-  const coverage = provisionCoverage(
-    taxonomy.map((entry) => entry.calderProvision),
-    data.agreements,
-    data.findings,
-    data.playbookVersions,
-  );
-  const vendors = vendorSummaries(data.agreements, data.findings);
   return (
     <>
       <section className="kpis">
@@ -163,100 +150,6 @@ export function Reports({ data }: { data: Data }) {
                   <b>{formatHours(row.medianHoursToComplete)}</b>
                 </span>
               ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-      <Card className="report-table-card">
-        <CardHeader>
-          <CardTitle>Presence identification coverage</CardTitle>
-          <p>
-            For each provision, how many agreements were checked for it (from the playbook version each was analyzed
-            under), how many were flagged, and what reviewers decided. Checked but not flagged does not prove the
-            provision is absent.
-          </p>
-        </CardHeader>
-        <CardContent>
-          <div className="report-table-scroll">
-            <table className="report-table">
-              <thead>
-                <tr>
-                  <th>Provision</th>
-                  <th>Checked in</th>
-                  <th>Flagged in</th>
-                  <th>Confirmed in</th>
-                  <th>Dismissed flags</th>
-                  <th>Awaiting decision</th>
-                </tr>
-              </thead>
-              <tbody>
-                {coverage.map((row) => (
-                  <tr key={row.provision} className={row.checked ? undefined : "muted"}>
-                    <th scope="row">{row.provision}</th>
-                    <td>{row.checked}</td>
-                    <td>
-                      {row.flagged}
-                      {row.checked > 0 && <span className="report-share">{Math.round((row.flagged / row.checked) * 100)}%</span>}
-                    </td>
-                    <td>{row.confirmed}</td>
-                    <td>{row.dismissed}</td>
-                    <td>{row.awaiting}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <p className="report-table-note">
-            Checked, flagged and confirmed count agreements; dismissed and awaiting count findings.
-          </p>
-        </CardContent>
-      </Card>
-      <Card className="report-table-card">
-        <CardHeader>
-          <CardTitle>Vendor history</CardTitle>
-          <p>
-            Every vendor's agreements and decisions. Names are matched the same way as in the review queue, so
-            "Northstar Inc." and "Northstar" count as one vendor.
-          </p>
-        </CardHeader>
-        <CardContent>
-          {vendors.length === 0 ? (
-            <p className="report-table-note">No agreements have been submitted yet.</p>
-          ) : (
-            <div className="report-table-scroll">
-              <table className="report-table">
-                <thead>
-                  <tr>
-                    <th>Vendor</th>
-                    <th>Agreements</th>
-                    <th>Last submitted</th>
-                    <th>Provisions confirmed</th>
-                    <th>Dismissed flags</th>
-                    <th>Awaiting decision</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {vendors.map((row) => (
-                    <tr key={row.vendor}>
-                      <th scope="row">
-                        {row.vendor}
-                        <span className="report-sub">{row.agreementTypes.join(", ")}</span>
-                      </th>
-                      <td>{row.agreements}</td>
-                      <td>{shortDate(row.lastSubmitted)}</td>
-                      <td className="report-wrap">
-                        {row.confirmed.length
-                          ? row.confirmed
-                              .map((c) => (row.agreements > 1 ? `${c.provision} (${c.agreements} of ${row.agreements})` : c.provision))
-                              .join(", ")
-                          : "None yet"}
-                      </td>
-                      <td>{row.dismissed}</td>
-                      <td>{row.awaiting}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
             </div>
           )}
         </CardContent>
