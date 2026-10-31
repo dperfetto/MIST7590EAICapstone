@@ -304,13 +304,29 @@ test("finding decisions reject blank or whitespace-only reasons", () => {
   assert.match(schema, /decided_at is null or length\(btrim\(coalesce\(decision_reason, ''\)\)\) > 0/i);
 });
 
-test("playbook explains every detection method and the manual fallback", () => {
-  for (const method of ["Regex", "AI", "Hybrid", "Regex + AI", "Manual fallback"])
-    assert.ok(workspace.includes(`name: "${method}"`));
-  assert.match(workspace, /Detection method guide/);
-  assert.match(workspace, /do\s+not determine whether contract language is acceptable/);
-  assert.match(workspace, /manual review remains available at\s+all times/);
-  assert.match(styles, /\.method-guide/);
+test("every contract type lists all ten provisions, with the additions switched off", () => {
+  const rows = [...schema.matchAll(/\('(rule-\d+)','([^']+)','([^']+)','[RMCN]','(?:[^']|'')*','[^']+',(true|false)\)/g)];
+  assert.equal(rows.length, 70);
+  for (const contractType of agreementTypes) {
+    const provisions = rows.filter((row) => row[2] === contractType).map((row) => row[3]);
+    assert.deepEqual([...provisions].sort(), taxonomy.provisions.map((entry) => entry.calderProvision).sort(), contractType);
+  }
+  // The original 37 rules stay on; the 33 added on 2026-10-31 start switched off.
+  for (const row of rows) assert.equal(row[4], Number(row[1].slice(5)) <= 37 ? "true" : "false", row[1]);
+  // Rerunning schema.sql must never switch a rule on or off.
+  assert.doesNotMatch(schema.match(/on conflict \(id\) do update set agreement_type=excluded\.agreement_type[^;]*;/)[0], /active/);
+  // A switched-on provision must be allowed by the taxonomy, or keyword analysis would skip it.
+  for (const entry of taxonomy.provisions) assert.deepEqual([...entry.contractTypes].sort(), [...agreementTypes].sort());
+  assert.match(data, /seed\.rules\.push\(\{[\s\S]*?active: false/);
+  assert.match(data, /rule\.agreementType === agreementType && rule\.active/);
+});
+
+test("the playbook has no detection method column", () => {
+  assert.match(schema, /alter table public\.playbook_rules drop column if exists method;/);
+  assert.doesNotMatch(schema, /create table if not exists public\.playbook_rules \([^;]*\bmethod text/);
+  assert.doesNotMatch(workspace, /r\.method|Detection method guide|rule-head-method/);
+  assert.doesNotMatch(data, /\bmethod: r\./);
+  assert.doesNotMatch(styles, /\.method-guide/);
 });
 
 test("optional CUAD classifier is isolated behind deterministic and manual fallbacks", () => {

@@ -1,5 +1,13 @@
 # Change log
 
+## 2026-10-31 - Every provision listed for every agreement type; Method column removed
+
+- Every agreement type's playbook now lists all ten provisions. The 33 provisions a type did not have before were added switched off (`rule-38` to `rule-70`), so an Administrator can switch one on in the app, and that is recorded as a new version. Existing rules and their on/off settings are unchanged, and no new version is created by the upgrade.
+- Each provision's `contractTypes` in the taxonomy now includes all seven types, so a switched-on provision is analyzed for any type, and manual findings can name any of the ten provisions.
+- Removed the detection "method" label (Regex, AI, Hybrid, Regex + AI) from the Playbooks page and dropped the `method` column from `playbook_rules`. Analysis never read it: the method actually used is chosen at intake and recorded on each finding. The Playbooks page now shows how many provisions are switched on for the selected type.
+- Rerun `supabase/schema.sql` on existing deployments. Demo data resets once (new storage key).
+- Keyword and independent-check results are unchanged.
+
 ## 2026-10-28 - Evaluation re-checked against the CUAD Labeling Handbook
 
 - Obtained the full CUAD Labeling Handbook (personal-use edition, as of September 9, 2021). It is cited by page in the evaluation notes but not copied into the repository.

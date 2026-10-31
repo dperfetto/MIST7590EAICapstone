@@ -1534,15 +1534,20 @@ body {
   line-height: 1.55;
 }
 
-/* Presence-only playbook table: category, CUAD-informed description, method, active. */
+/* Presence-only playbook table: provision, CUAD-informed description, active. */
 .rule-head,
 .rule-table > div {
-  grid-template-columns: 1.2fr 3fr 0.9fr 0.5fr;
+  grid-template-columns: 1.2fr 3fr 0.5fr;
+}
+.playbook-count {
+  margin: 14px 0 8px;
+  color: #5d6b7b;
+  font-size: 0.84rem;
 }
 @media (max-width: 1050px) {
   .rule-head,
   .rule-table > div {
-    grid-template-columns: 1.1fr 2.5fr 0.8fr 0.5fr;
+    grid-template-columns: 1.1fr 2.5fr 0.5fr;
   }
   .rule-head span:last-child,
   .rule-table > div > *:last-child {
@@ -1649,65 +1654,6 @@ body {
   width: 170px;
 }
 
-.rule-head-method {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-.method-guide-trigger {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  border: 0;
-  background: transparent;
-  padding: 0;
-  color: var(--calder-accent);
-  font-size: 0.68rem;
-  font-weight: 600;
-  text-transform: none;
-  letter-spacing: normal;
-  cursor: pointer;
-}
-.method-guide-trigger:hover {
-  text-decoration: underline;
-}
-.method-guide-list {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-  margin: 4px 0 0;
-}
-.method-guide-list > div {
-  padding: 11px 12px;
-  border: 1px solid #e3e8ee;
-  border-radius: 8px;
-  background: #f8fafc;
-}
-.method-guide-list dt {
-  color: #173149;
-  font-size: 0.83rem;
-  font-weight: 800;
-}
-.method-guide-list dd {
-  margin: 4px 0 0;
-  color: #5d6b7b;
-  font-size: 0.77rem;
-  line-height: 1.45;
-}
-.method-guide-footnote {
-  margin: 12px 0 0;
-  padding-top: 12px;
-  border-top: 1px solid #e6ebf0;
-  color: #697789;
-  font-size: 0.79rem;
-  line-height: 1.5;
-}
-@media (max-width: 480px) {
-  .method-guide-list {
-    grid-template-columns: 1fr;
-  }
-}
 /* AI evaluation (administrators) */
 .evaluation-table {
   padding-top: 0;

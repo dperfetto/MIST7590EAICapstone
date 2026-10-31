@@ -16,7 +16,7 @@
       "cuadCategories": ["Renewal Term"],
       "description": "Automatic or unilateral extension of the agreement after the initial term.",
       "exclusions": ["Do not label the initial term or a renewal that requires a new mutual agreement; the extension must be automatic or exercisable by one party."],
-      "contractTypes": ["Software Subscription", "Licensing", "Other"],
+      "contractTypes": ["Software Subscription", "Professional Services", "Licensing", "Logistics and Freight", "Data Processing Addendum", "Mutual NDA", "Other"],
       "candidatePhrases": ["automatically renew", "automatic renewal", "successive renewal", "renewal term", "shall renew", "extended for successive", "renew for an additional", "automatically extend", "automatically be extended", "renew automatically", "extend for an additional", "extend for successive"]
     },
     {
@@ -24,7 +24,7 @@
       "cuadCategories": ["Notice Period To Terminate Renewal"],
       "description": "Advance notice required to prevent or terminate a renewal.",
       "exclusions": ["Do not label a general termination notice period unless the text ties the notice to renewal or expiration."],
-      "contractTypes": ["Software Subscription", "Licensing", "Other"],
+      "contractTypes": ["Software Subscription", "Professional Services", "Licensing", "Logistics and Freight", "Data Processing Addendum", "Mutual NDA", "Other"],
       "candidatePhrases": ["notice of non-renewal", "notice not to renew", "terminate renewal", "prior to renewal", "before expiration", "days prior written notice", "months prior written notice", "prior to the expiration of the then", "before the end of the then", "intention not to renew"]
     },
     {
@@ -40,7 +40,7 @@
       "cuadCategories": ["Exclusivity"],
       "description": "Exclusive dealing, requirements purchasing, or restrictions on working with third parties.",
       "exclusions": ["Do not label an exclusive remedy, an exclusive jurisdiction clause, or an intellectual-property license merely because it uses the word exclusive."],
-      "contractTypes": ["Software Subscription", "Licensing", "Other"],
+      "contractTypes": ["Software Subscription", "Professional Services", "Licensing", "Logistics and Freight", "Data Processing Addendum", "Mutual NDA", "Other"],
       "candidatePhrases": ["exclusive", "exclusively", "exclusivity", "sole provider", "all requirements", "shall not engage", "shall not license", "shall not sell to"]
     },
     {
@@ -48,7 +48,7 @@
       "cuadCategories": ["Termination For Convenience"],
       "description": "A right to terminate without cause after notice or a waiting period.",
       "exclusions": ["Do not label termination limited to breach, insolvency, force majeure, or another stated cause."],
-      "contractTypes": ["Professional Services", "Logistics and Freight", "Other"],
+      "contractTypes": ["Software Subscription", "Professional Services", "Licensing", "Logistics and Freight", "Data Processing Addendum", "Mutual NDA", "Other"],
       "candidatePhrases": ["termination for convenience", "terminate for convenience", "without cause", "for any reason", "for no reason", "at any time upon", "sole discretion may terminate"]
     },
     {
@@ -56,7 +56,7 @@
       "cuadCategories": ["Change Of Control"],
       "description": "A party has the right to terminate, or consent or notice of the counterparty is required, if a party undergoes a change of control, such as a merger, stock sale, transfer of all or substantially all of its assets or business, or assignment by operation of law.",
       "exclusions": ["Do not label an anti-assignment clause that only restricts assigning the agreement to a third party; the text must tie consent, notice, or termination to a change in the ownership or control of a party."],
-      "contractTypes": ["Licensing", "Data Processing Addendum", "Mutual NDA", "Other"],
+      "contractTypes": ["Software Subscription", "Professional Services", "Licensing", "Logistics and Freight", "Data Processing Addendum", "Mutual NDA", "Other"],
       "candidatePhrases": ["change of control", "change in control", "change of ownership", "controlling interest", "merger", "operation of law", "substantially all assets", "substantially all of its assets"]
     },
     {
@@ -64,7 +64,7 @@
       "cuadCategories": ["Audit Rights"],
       "description": "A right to inspect or audit books, records, systems, or locations for compliance.",
       "exclusions": ["Do not label a reference to a party's normal financial audit unless another party receives an inspection, access, or assurance-report right."],
-      "contractTypes": ["Data Processing Addendum", "Other"],
+      "contractTypes": ["Software Subscription", "Professional Services", "Licensing", "Logistics and Freight", "Data Processing Addendum", "Mutual NDA", "Other"],
       "candidatePhrases": ["right to audit", "audit rights", "inspect the books", "inspect records", "inspection of", "audit of", "access to records", "soc 2", "assurance report"]
     },
     {
@@ -72,7 +72,7 @@
       "cuadCategories": ["Insurance"],
       "description": "A requirement that a party maintain specified insurance coverage.",
       "exclusions": ["Do not label a passing reference to insurers or insurance proceeds without an obligation to maintain coverage or provide evidence of it."],
-      "contractTypes": ["Professional Services", "Logistics and Freight", "Data Processing Addendum", "Other"],
+      "contractTypes": ["Software Subscription", "Professional Services", "Licensing", "Logistics and Freight", "Data Processing Addendum", "Mutual NDA", "Other"],
       "candidatePhrases": ["maintain insurance", "insurance coverage", "commercial general liability", "professional liability", "cyber liability", "certificate of insurance", "additional insured", "policy limits"]
     },
     {
@@ -80,7 +80,7 @@
       "cuadCategories": ["Warranty Duration"],
       "description": "The period during which a warranty against defects or errors applies.",
       "exclusions": ["Do not label a warranty or disclaimer that does not state a duration, deadline, or measurable warranty period."],
-      "contractTypes": ["Professional Services", "Other"],
+      "contractTypes": ["Software Subscription", "Professional Services", "Licensing", "Logistics and Freight", "Data Processing Addendum", "Mutual NDA", "Other"],
       "candidatePhrases": ["warranty period", "warranty shall", "warrants for", "days following acceptance", "months from delivery", "years from delivery", "defects for a period", "errors for a period"]
     }
   ]
