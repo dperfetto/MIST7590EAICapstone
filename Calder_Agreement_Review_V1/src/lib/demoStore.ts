@@ -12,7 +12,6 @@ const seed: Data = {
     email: "demo.admin@calder.example",
     role: "administrator",
   },
-  aiStatus: "manual-ready",
   // Priya has review history, so removing her deactivates the account; the
   // others have none and are deleted.
   users: [

@@ -222,9 +222,6 @@ export default function Workspace() {
           ))}
         </nav>
         <div className="sidebar-foot">
-          <div className="ai-ok">
-            <span /> Manual review ready
-          </div>
           <div className="profile">
             <div className="avatar">
               {data.me.name.slice(0, 2).toUpperCase()}
