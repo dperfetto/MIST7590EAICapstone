@@ -75,7 +75,8 @@ export type Audit = {
   detail: string;
   createdAt: string;
 };
-export type UserProfile = { id: string; name: string; role: UserRole };
+// deactivated: removed by an Administrator but kept because it has review history.
+export type UserProfile = { id: string; name: string; role: UserRole; deactivated?: boolean };
 export type EvaluationOutcome =
   | "found"
   | "missed"
@@ -125,7 +126,7 @@ export type EvaluationRun = {
   checks: IndependentCheckResult[];
 };
 export type Data = {
-  me: { name: string; email: string; role: UserRole };
+  me: { id?: string; name: string; email: string; role: UserRole };
   agreements: Agreement[];
   findings: Finding[];
   rules: Rule[];

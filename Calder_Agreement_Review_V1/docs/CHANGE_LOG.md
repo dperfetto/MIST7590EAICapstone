@@ -1,5 +1,12 @@
 # Change log
 
+## 2026-10-31 - Administrators can remove accounts
+
+- Profile & access has a **Remove** button for every account except your own, with a confirmation dialog.
+- An account with no agreements, decisions, comments or audit history is deleted. Any other account is deactivated, because the database never lets review records lose their user: the account is banned from signing in, every role check fails for it, and its name stays on past records. A deactivated account shows **Reactivate**, which restores its previous role.
+- Each removal or reactivation is written to the audit log by the database (`remove_user_account`, `reactivate_user_account` in `schema.sql`). Rerun `schema.sql` on existing deployments. Demo data resets once and now includes sample users.
+- Profile & access: the name card now says what the name is used for and that earlier records keep the old name, and **Save name** is disabled until the name changes. Administrators see a "What each role can do" guide under the user list, built from the same list as the Current access card, which now shows that roles build on each other.
+
 ## 2026-10-31 - Every provision listed for every agreement type; Method column removed
 
 - Every agreement type's playbook now lists all ten provisions. The 33 provisions a type did not have before were added switched off (`rule-38` to `rule-70`), so an Administrator can switch one on in the app, and that is recorded as a new version. Existing rules and their on/off settings are unchanged, and no new version is created by the upgrade.

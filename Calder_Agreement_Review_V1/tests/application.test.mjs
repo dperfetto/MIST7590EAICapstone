@@ -236,11 +236,27 @@ test("new users are Submitters and only administrators can assign roles", () => 
   assert.match(data, /supabase\.rpc\("assign_user_role"/);
 });
 
+test("administrators remove accounts by deleting them, or deactivating them when they have history", () => {
+  const remove = schema.match(/create or replace function public\.remove_user_account[\s\S]*?end; \$\$;/)?.[0] ?? "";
+  assert.match(remove, /current_user_role\(\) <> 'administrator'/);
+  assert.match(remove, /target_user = auth\.uid\(\)[\s\S]*cannot remove your own account/);
+  assert.match(remove, /delete from auth\.users[\s\S]*exception when foreign_key_violation then[\s\S]*deactivated_at = now\(\)[\s\S]*banned_until/);
+  assert.match(remove, /'Account deleted'[\s\S]*'Account deactivated'/);
+  assert.match(schema, /case when deactivated_at is null then role else 'deactivated' end/);
+  assert.match(schema, /grant execute on function public\.remove_user_account\(uuid\) to authenticated/);
+  assert.match(schema, /grant execute on function public\.reactivate_user_account\(uuid\) to authenticated/);
+  assert.match(data, /"remove_user_account" : "reactivate_user_account"/);
+  assert.match(data, /This account has been deactivated/);
+  assert.match(workspace, /action: "remove_user"/);
+  assert.match(workspace, /action: "reactivate_user"/);
+  assert.match(workspace, /\{!isMe && <Button/);
+});
+
 test("permissions are cumulative and approvers can resolve escalations", () => {
   assert.match(workspace, /reviewer: \["overview", "intake", "queue"/);
   assert.match(workspace, /approver: \["overview", "intake", "queue"/);
   assert.match(workspace, /Resolve escalation/);
-  assert.match(workspace, /Profile settings cannot change permissions/);
+  assert.match(workspace, /Only an\s+Administrator can change your role/);
 });
 
 test("review queue handles an empty or fully cleared agreement list", () => {
@@ -500,4 +516,12 @@ test("search engines get a sitemap and robots.txt that list only public pages", 
   assert.deepEqual(locs, ["https://mist-7590-eai-capstone.vercel.app/"]);
     assert.match(robots, /^Sitemap: https:\/\/mist-7590-eai-capstone\.vercel\.app\/sitemap\.xml$/m);
   assert.match(robots, /^Disallow: \/api\/$/m);
+});
+test("Profile & access explains the name field and what each role can do", () => {
+  assert.match(workspace, /<CardTitle>Your name<\/CardTitle>/);
+  assert.match(workspace, /earlier records keep the name they were made under/);
+  assert.match(workspace, /What each role can do/);
+  for (const role of ["submitter", "reviewer", "approver", "administrator"])
+    assert.match(workspace, new RegExp(`  ${role}: \\["`));
+  assert.match(workspace, /Assign roles and remove accounts/);
 });

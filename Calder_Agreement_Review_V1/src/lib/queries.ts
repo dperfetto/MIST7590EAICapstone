@@ -246,13 +246,16 @@ export async function getWorkspace(): Promise<Data> {
   ]);
   const failed = [profile, a, f, r, au].find((x) => x.error);
   if (failed?.error) throw failed.error;
+  if (profile.data.deactivated_at)
+    throw new Error("This account has been deactivated. Contact an Administrator if you need access again.");
   const assignedRole = normalizeRole(profile.data.role);
   const users = assignedRole === "administrator"
-    ? await supabase.from("profiles").select("id,full_name,role").order("full_name")
+    ? await supabase.from("profiles").select("*").order("full_name")
     : { data: [], error: null };
   if (users.error) throw users.error;
   return {
     me: {
+      id: user.id,
       name: profile.data.full_name || user.email?.split("@")[0] || "User",
       email: user.email || "",
       role: assignedRole,
@@ -268,6 +271,7 @@ export async function getWorkspace(): Promise<Data> {
       id: row.id,
       name: row.full_name || "Unnamed user",
       role: normalizeRole(row.role),
+      deactivated: Boolean(row.deactivated_at),
     })),
   };
 }

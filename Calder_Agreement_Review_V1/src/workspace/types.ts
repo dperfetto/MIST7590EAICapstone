@@ -47,7 +47,7 @@ export type Audit = {
   createdAt: string;
 };
 export type Data = {
-  me: { name: string; email: string; role: UserRole };
+  me: { id?: string; name: string; email: string; role: UserRole };
   agreements: Agreement[];
   findings: Finding[];
   rules: Rule[];
@@ -55,7 +55,7 @@ export type Data = {
   comments: FindingComment[];
   playbookVersions: PlaybookVersion[];
   aiStatus: string;
-  users?: { id: string; name: string; role: UserRole }[];
+  users?: { id: string; name: string; role: UserRole; deactivated?: boolean }[];
 };
 
 export type { FindingComment, PlaybookVersion };
