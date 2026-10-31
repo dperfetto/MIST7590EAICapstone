@@ -554,3 +554,17 @@ test("completed agreements open a printable review record on the Agreements page
   assert.match(data, /export async function getAgreementActivity[\s\S]*?\.eq\("agreement_id", agreementId\)/);
   assert.match(styles, /@media print \{[\s\S]*?\.sidebar,[\s\S]*?\.no-print/);
 });
+
+test("mobile header, agreement register and sidebar footer stay usable on phones", () => {
+  // The header menu button shares position: fixed with the backdrop; on phones it must sit in the flow.
+  assert.match(styles, /\.menu \{[^}]*position: static !important;[^}]*inset: auto !important;/);
+  assert.match(styles, /\.table-tools \{\s*flex-direction: column;/);
+  assert.match(styles, /grid-template-areas:\s*"vendor status"\s*"type due";/);
+  assert.match(styles, /\.registry > button > \[data-slot="badge"\] \{\s*grid-area: status;/);
+  assert.doesNotMatch(workspace, /Manual review ready/);
+  assert.doesNotMatch(data, /aiStatus/);
+});
+
+test("finding cards fit the screen on phones", () => {
+  assert.match(styles, /\.finding-stack \{[^}]*grid-template-columns: minmax\(0, 1fr\);/);
+});

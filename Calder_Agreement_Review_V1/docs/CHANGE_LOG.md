@@ -1,5 +1,13 @@
 # Change log
 
+## 2026-10-31 - Phone layout and Profile & access fixes
+
+- On phones the menu button sat on top of the page title, because it shared a fixed position with the navigation backdrop. It now sits beside the title.
+- The Agreements page works on phones: the header and filters stack at full width, and each agreement shows as a compact card (vendor and status, then type and needed-by date). Desktop and tablet layouts are unchanged.
+- In the review queue on phones, finding cards were wider than the screen, so their right edge (including comment text) was cut off. Cards now fit the screen and their header wraps.
+- Access administration: the role and action columns have fixed widths, so the dropdown and Assign button line up on every row, including your own (which has no Remove button).
+- Removed the "Manual review ready" label from the sidebar and the unused `aiStatus` field behind it. It was fixed text that never changed and looked like a live status.
+
 ## 2026-10-31 - Printable review records
 
 - On the Agreements page, a completed review now opens its **review record** on the same page instead of the review queue. The record shows the agreement's details, each finding with its source quote and every decision on it (who, when and why, including escalations), comment threads, and the agreement's activity.

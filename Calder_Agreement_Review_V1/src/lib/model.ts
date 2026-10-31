@@ -133,7 +133,6 @@ export type Data = {
   audit: Audit[];
   comments: FindingComment[];
   playbookVersions: PlaybookVersion[];
-  aiStatus: string;
   users?: UserProfile[];
 };
 export const agreementReviewStatus = (statuses: string[], currentStatus: string) => {

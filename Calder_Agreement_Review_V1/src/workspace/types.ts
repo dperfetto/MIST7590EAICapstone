@@ -54,7 +54,6 @@ export type Data = {
   audit: Audit[];
   comments: FindingComment[];
   playbookVersions: PlaybookVersion[];
-  aiStatus: string;
   users?: { id: string; name: string; role: UserRole; deactivated?: boolean }[];
 };
 

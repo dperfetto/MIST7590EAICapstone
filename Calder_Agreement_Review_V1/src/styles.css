@@ -144,19 +144,6 @@ body {
   border-top: 1px solid #29445f;
   padding: 18px 6px 0;
 }
-.ai-ok {
-  font-size: 0.72rem;
-  color: #b6c5d5;
-  margin-bottom: 18px;
-}
-.ai-ok span {
-  display: inline-block;
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: #57d39b;
-  margin-right: 7px;
-}
 .profile {
   display: flex;
   gap: 10px;
@@ -845,6 +832,9 @@ body {
 }
 .finding-stack {
   display: grid;
+  /* Without minmax(0, …) the column grows to the widest card header and runs
+     off a phone screen. */
+  grid-template-columns: minmax(0, 1fr);
   gap: 16px;
   margin-bottom: 16px;
 }
@@ -1356,7 +1346,9 @@ body {
 }
 .access-user-row {
   display: grid;
-  grid-template-columns: minmax(180px, 1fr) 190px auto;
+  /* Fixed role and action columns so every row lines up, including your own
+     row, which has no Remove button. */
+  grid-template-columns: minmax(180px, 1fr) 190px 190px;
   gap: 12px;
   align-items: center;
   padding: 13px 0;
@@ -1365,10 +1357,13 @@ body {
 .access-user-row:first-child {
   border-top: 0;
 }
+.access-user-row [data-slot="select-trigger"] {
+  width: 100%;
+}
 .access-user-actions {
   display: flex;
   gap: 8px;
-  justify-content: flex-end;
+  justify-content: flex-start;
 }
 .access-user-actions .access-remove {
   color: #b42318;
@@ -2115,7 +2110,6 @@ body { overflow-x: hidden; }
   box-shadow: 0 12px 30px rgba(15, 35, 55, 0.05) !important;
 }
 
-.sidebar-foot .ai-ok { margin: 0 0 14px !important; color: var(--calder-muted) !important; }
 .sidebar-foot .profile { padding: 0 !important; border: 0 !important; }
 .sidebar-foot .profile strong { color: var(--calder-text) !important; }
 .sidebar-foot .profile span { color: var(--calder-muted) !important; }
@@ -2211,6 +2205,10 @@ body { overflow-x: hidden; }
   }
 
   .menu {
+    /* .menu shares position: fixed with the backdrop above; in the header it
+       must sit in the flow, or it covers the page title. */
+    position: static !important;
+    inset: auto !important;
     display: grid !important;
     place-items: center !important;
     flex: 0 0 40px !important;
@@ -3013,5 +3011,74 @@ body { overflow-x: hidden; }
   .review-record {
     border: 0;
     padding: 0;
+  }
+}
+
+/* Agreements page on phones: stacked header and filters, and each agreement
+   as a compact card (vendor and status, then type and needed-by date). */
+@media (max-width: 760px) {
+  .table-tools {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 14px;
+  }
+  .table-tools > .agreement-filters {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 9px;
+  }
+  .agreement-filters .global-search {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+  .agreement-filters .type-filter,
+  .agreement-filters .status-filter {
+    width: 100%;
+    min-width: 0;
+  }
+  .registry > button {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "vendor status"
+      "type due";
+    gap: 6px 12px;
+    padding: 14px 4px;
+  }
+  .registry > button > span:nth-child(1) {
+    grid-area: vendor;
+    align-items: flex-start;
+  }
+  .registry > button > span:nth-child(2) {
+    grid-area: type;
+    padding-left: 28px;
+    color: #586678;
+  }
+  .registry > button > span:nth-child(3) {
+    display: block;
+    grid-area: due;
+    align-self: start;
+    text-align: right;
+    color: #586678;
+    white-space: nowrap;
+  }
+  .registry > button > [data-slot="badge"] {
+    grid-area: status;
+    justify-self: end;
+    align-self: start;
+  }
+  .registry > button > svg:last-child {
+    display: none;
+  }
+  .getting-started .card-head {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .finding-top {
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+  .finding-top > div {
+    flex-wrap: wrap;
+    min-width: 0;
   }
 }

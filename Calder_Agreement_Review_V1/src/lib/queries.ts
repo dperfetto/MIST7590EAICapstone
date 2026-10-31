@@ -276,7 +276,6 @@ export async function getWorkspace(): Promise<Data> {
     audit: (au.data || []).map(camelAudit),
     comments: comments.map(camelComment),
     playbookVersions: versions.map(camelPlaybookVersion),
-    aiStatus: "manual-ready",
     users: users.map((row) => ({
       id: row.id,
       name: row.full_name || "Unnamed user",
