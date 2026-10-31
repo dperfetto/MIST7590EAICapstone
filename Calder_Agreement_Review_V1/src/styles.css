@@ -554,6 +554,34 @@ body {
   float: right;
   color: #28384b;
 }
+.health-key {
+  display: grid;
+  gap: 6px;
+  margin: 16px 0 0;
+  padding-top: 12px;
+  border-top: 1px solid #e7edf3;
+  font-size: 0.76rem;
+  color: #718096;
+}
+.health-key > div {
+  display: grid;
+  grid-template-columns: 62px 1fr;
+  gap: 8px;
+}
+.health-key dt {
+  font-weight: 600;
+  color: #4a5568;
+}
+.health-key dt .dot {
+  margin-right: 6px;
+}
+.health-key dd,
+.health-key p {
+  margin: 0;
+}
+.health-key p {
+  margin-top: 4px;
+}
 .dot {
   display: inline-block;
   width: 8px;
@@ -2830,4 +2858,160 @@ body { overflow-x: hidden; }
 .sidebar > nav {
   flex: 1 1 auto !important;
   min-height: 0 !important;
+}
+/* Review record (Agreements page) and its printed form. */
+.review-record-toolbar {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.review-record {
+  padding: 32px 36px;
+  background: #fff;
+  border: 1px solid #dfe6ee;
+  border-radius: 14px;
+  color: #17243a;
+}
+.review-record header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 14px;
+  padding-bottom: 18px;
+  border-bottom: 2px solid #17243a;
+}
+.review-record-eyebrow {
+  flex-basis: 100%;
+  color: #718096;
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.review-record header h2 {
+  margin: 0;
+  font-size: 1.6rem;
+}
+.review-record-details {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px 20px;
+  margin: 18px 0 8px;
+}
+.review-record-details dt {
+  color: #718096;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.review-record-details dd {
+  margin: 2px 0 0;
+  font-size: 0.88rem;
+  overflow-wrap: anywhere;
+}
+.review-record section {
+  margin-top: 26px;
+}
+.review-record h3 {
+  margin: 0 0 12px;
+  font-size: 1.05rem;
+}
+.review-record-finding {
+  padding: 16px 0;
+  border-top: 1px solid #e7edf3;
+  break-inside: avoid;
+}
+.review-record-finding-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.review-record blockquote {
+  margin: 10px 0 6px;
+  padding: 8px 12px;
+  border-left: 3px solid #0b6676;
+  background: #f5f8fa;
+  font-size: 0.86rem;
+  line-height: 1.5;
+}
+.review-record-muted {
+  margin: 0;
+  color: #718096;
+  font-size: 0.8rem;
+}
+.review-record-trail {
+  margin: 10px 0 0;
+  padding-left: 18px;
+  font-size: 0.85rem;
+}
+.review-record-trail li + li {
+  margin-top: 6px;
+}
+.review-record-trail span,
+.review-record-comments span,
+.review-record-activity span {
+  display: block;
+  color: #4a5568;
+}
+.review-record-comments {
+  margin-top: 10px;
+  font-size: 0.82rem;
+}
+.review-record-comments h4 {
+  margin: 0 0 4px;
+  font-size: 0.82rem;
+}
+.review-record-comments p {
+  margin: 6px 0 0;
+}
+.review-record-activity {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+}
+.review-record-activity td {
+  padding: 8px 12px 8px 0;
+  border-top: 1px solid #e7edf3;
+  vertical-align: top;
+}
+.review-record-activity td:first-child,
+.review-record-activity td:nth-child(2) {
+  white-space: nowrap;
+}
+@media (max-width: 760px) {
+  .review-record {
+    padding: 20px 16px;
+  }
+  .review-record-details {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .review-record-activity td:first-child,
+  .review-record-activity td:nth-child(2) {
+    white-space: normal;
+  }
+}
+@media print {
+  .sidebar,
+  .sidebar-backdrop,
+  .topbar,
+  .no-print,
+  [data-sonner-toaster] {
+    display: none !important;
+  }
+  .app-shell {
+    display: block !important;
+    background: #fff !important;
+  }
+  body,
+  main,
+  .content {
+    background: #fff !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+  .review-record {
+    border: 0;
+    padding: 0;
+  }
 }

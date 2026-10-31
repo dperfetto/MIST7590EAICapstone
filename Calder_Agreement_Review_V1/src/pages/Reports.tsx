@@ -108,13 +108,31 @@ export function Reports({ data }: { data: Data }) {
               </span>
               <span>
                 <i className="dot amber" />
-                Due in 48 hours <b>{health.dueSoon}</b>
+                Due within 2 days <b>{health.dueSoon}</b>
               </span>
               <span>
                 <i className="dot red" />
                 Overdue <b>{health.overdue}</b>
               </span>
             </div>
+            <dl className="health-key">
+              <div>
+                <dt><i className="dot green" />Green</dt>
+                <dd>Needed-by date is 3 or more days away.</dd>
+              </div>
+              <div>
+                <dt><i className="dot amber" />Amber</dt>
+                <dd>Due today, tomorrow or the day after. Prioritize these.</dd>
+              </div>
+              <div>
+                <dt><i className="dot red" />Red</dt>
+                <dd>The needed-by date has passed.</dd>
+              </div>
+              <p>
+                Only open reviews are counted; finished reviews drop out. The percentage is green out of all open
+                agreements.
+              </p>
+            </dl>
           </CardContent>
         </Card>
       </div>

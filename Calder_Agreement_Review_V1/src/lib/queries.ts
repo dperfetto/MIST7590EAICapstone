@@ -121,6 +121,25 @@ export async function getAuditPage(
     pageSize: safePageSize,
   };
 }
+// One agreement's audit events, oldest first, for its review record. Row-level
+// security limits a Submitter to the events they recorded themselves.
+export async function getAgreementActivity(agreementId: string): Promise<Audit[]> {
+  if (!supabase) {
+    return localRead()
+      .audit.filter((event) => event.agreementId === agreementId)
+      .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+  }
+  const rows = await readInBatches<any>((from, to) =>
+    supabase!
+      .from("audit_events")
+      .select("*", { count: "exact" })
+      .eq("agreement_id", agreementId)
+      .order("created_at")
+      .order("id")
+      .range(from, to),
+  );
+  return rows.map(camelAudit);
+}
 export async function getAllAuditEvents(): Promise<Audit[]> {
   if (!supabase) {
     return [...localRead().audit].sort(

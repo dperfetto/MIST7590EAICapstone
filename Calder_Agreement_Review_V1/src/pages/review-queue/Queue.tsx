@@ -11,6 +11,7 @@ import { ManualFinding } from "@/pages/review-queue/ManualFinding";
 import { VendorHistory } from "@/pages/review-queue/VendorHistory";
 import { provisionSummary, vendorHistory } from "@/lib/vendorHistory";
 import { playbookChange } from "@/lib/playbookVersions";
+import { isReviewComplete } from "@/lib/reviewMetrics";
 import { PlaybookChange } from "@/pages/review-queue/PlaybookChange";
 import { FindingThread } from "@/pages/review-queue/FindingThread";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -37,18 +38,8 @@ export function Queue({
     [decision, setDecision] = useState("accepted"),
     [reason, setReason] = useState(""),
     [queueTab, setQueueTab] = useState<"pending" | "completed">("pending");
-  const completedAgreements = data.agreements.filter((agreement) => {
-    const agreementFindings = data.findings.filter(
-      (finding) => finding.agreementId === agreement.id,
-    );
-    return (
-      agreement.status?.startsWith("cleared") ||
-      (agreementFindings.length > 0 &&
-        agreementFindings.every((finding) =>
-          ["accepted", "dismissed"].includes(finding.status),
-        ))
-    );
-  });
+  // Same rule as the Agreements page and Reporting (reviewMetrics).
+  const completedAgreements = data.agreements.filter((agreement) => isReviewComplete(agreement, data.findings));
   const completedIds = new Set(completedAgreements.map((agreement) => agreement.id));
   const queueAgreements = data.agreements.filter(
     (agreement) => !completedIds.has(agreement.id),

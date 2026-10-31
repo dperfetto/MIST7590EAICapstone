@@ -1,7 +1,10 @@
-import { type Agreement } from "@/workspace/types";
-import { useRef } from "react";
+import { type Agreement, type Finding, type FindingComment } from "@/workspace/types";
+import { type UserRole } from "@/lib/model";
+import { useRef, useState } from "react";
+import { isReviewComplete } from "@/lib/reviewMetrics";
+import { ReviewRecord } from "@/pages/ReviewRecord";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ChevronRight, FileText, Search } from "lucide-react";
+import { ChevronRight, FileCheck2, FileText, Search } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { agreementTypes } from "@/lib/model";
 import { formatDueDate, label, tone } from "@/workspace/format";
@@ -16,6 +19,9 @@ export function Agreements({
   status,
   setStatus,
   statuses,
+  findings,
+  comments,
+  role,
   onSelect,
 }: {
   rows: Agreement[];
@@ -26,15 +32,24 @@ export function Agreements({
   status: string;
   setStatus: (s: string) => void;
   statuses: string[];
+  findings: Finding[];
+  comments: FindingComment[];
+  role: UserRole;
   onSelect?: (s: string) => void;
 }) {
   const searchInputRef = useRef<HTMLInputElement>(null);
+  // A finished review opens its printable record here; one still in progress
+  // goes to the review queue, where the work happens.
+  const [recordId, setRecordId] = useState<string | null>(null);
+  const record = rows.find((a) => a.id === recordId);
+  if (record)
+    return <ReviewRecord agreement={record} findings={findings} comments={comments} role={role} onBack={() => setRecordId(null)} />;
   return (
     <Card>
       <CardHeader className="table-tools">
         <div>
           <CardTitle>Agreement register</CardTitle>
-          <p>All versions, workflow states, and due dates</p>
+          <p>Open a completed review to see and print its record. Reviews in progress open in the review queue.</p>
         </div>
         <div className="agreement-filters">
           <div className="global-search">
@@ -88,8 +103,15 @@ export function Agreements({
           <span>Status</span>
           <span />
         </div>
-        {rows.map((a) => (
-          <button key={a.id} disabled={!onSelect} onClick={() => onSelect?.(a.id)}>
+        {rows.map((a) => {
+          const complete = isReviewComplete(a, findings);
+          return (
+          <button
+            key={a.id}
+            disabled={!complete && !onSelect}
+            title={complete ? "View and print the review record" : "Open in the review queue"}
+            onClick={() => (complete ? setRecordId(a.id) : onSelect?.(a.id))}
+          >
             <span>
               <FileText size={18} />
               <b>
@@ -107,9 +129,10 @@ export function Agreements({
             <Badge variant="outline" className={tone(a.status)}>
               {label(a.status)}
             </Badge>
-            <ChevronRight size={17} />
+            {complete ? <FileCheck2 size={17} aria-label="Review record" /> : <ChevronRight size={17} />}
           </button>
-        ))}
+          );
+        })}
       </CardContent>
     </Card>
   );

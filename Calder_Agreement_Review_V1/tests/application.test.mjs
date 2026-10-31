@@ -271,7 +271,7 @@ test("review queue handles an empty or fully cleared agreement list", () => {
 test("completed reviews are separated from agreements awaiting review", () => {
   assert.match(workspace, /To be reviewed/);
   assert.match(workspace, /Completed reviews/);
-  assert.match(workspace, /agreementFindings\.every[\s\S]*\["accepted", "dismissed"\]/);
+  assert.match(workspace, /data\.agreements\.filter\(\(agreement\) => isReviewComplete\(agreement, data\.findings\)\)/);
   assert.match(workspace, /!completedIds\.has\(agreement\.id\)/);
   assert.match(workspace, /Review complete/);
   assert.match(styles, /\.queue-tabs/);
@@ -534,4 +534,23 @@ test("the workspace loads every agreement, finding and comment, not just the fir
   assert.match(data, /const newestFirst: Order\[\] = \[\["created_at", false\], \["id", false\]\]/);
   assert.match(data, /select\("\*", \{ count: "exact" \}\)/);
   assert.doesNotMatch(data, /from\("findings"\)\s*\.select\("\*"\)\s*\.order/);
+});
+
+test("review health explains its colours and labels the amber band accurately", () => {
+  assert.match(workspace, /className="health-key"/);
+  assert.match(workspace, /Needed-by date is 3 or more days away/);
+  assert.match(workspace, /Due today, tomorrow or the day after/);
+  assert.match(workspace, /The needed-by date has passed/);
+  assert.match(workspace, /Due within 2 days/);
+  assert.doesNotMatch(workspace, /Due in 48 hours/);
+});
+
+test("completed agreements open a printable review record on the Agreements page", () => {
+  assert.match(workspace, /complete \? setRecordId\(a\.id\) : onSelect\?\.\(a\.id\)/);
+  assert.match(workspace, /const complete = isReviewComplete\(a, findings\)/);
+  assert.match(workspace, /<ReviewRecord agreement=\{record\}/);
+  assert.match(workspace, /onClick=\{\(\) => window\.print\(\)\}/);
+  assert.match(workspace, /className="review-record-toolbar no-print"/);
+  assert.match(data, /export async function getAgreementActivity[\s\S]*?\.eq\("agreement_id", agreementId\)/);
+  assert.match(styles, /@media print \{[\s\S]*?\.sidebar,[\s\S]*?\.no-print/);
 });
