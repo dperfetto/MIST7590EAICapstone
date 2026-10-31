@@ -318,6 +318,9 @@ export default function Workspace() {
               status={status}
               setStatus={setStatus}
               statuses={statuses}
+              findings={findings}
+              comments={data.comments}
+              role={data.me.role}
               onSelect={canOpenQueue ? (id) => {
                 setSelected(id);
                 setView("queue");

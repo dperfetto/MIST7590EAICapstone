@@ -1,5 +1,17 @@
 # Change log
 
+## 2026-10-31 - Printable review records
+
+- On the Agreements page, a completed review now opens its **review record** on the same page instead of the review queue. The record shows the agreement's details, each finding with its source quote and every decision on it (who, when and why, including escalations), comment threads, and the agreement's activity.
+- **Print** prints just the record, without the sidebar, toolbar or buttons; the browser's "Save as PDF" keeps a copy for the file.
+- Reviews still in progress open in the review queue as before, so a printout is always of a finished review. Anyone who can see an agreement can open its record. A Submitter's activity list shows only the events they recorded (row-level security); decisions still appear with each finding.
+- The review queue's Completed tab and the Agreements page now use the same completion rule (`isReviewComplete`).
+
+## 2026-10-31 - Review health colour key
+
+- The Review health card on Reporting now explains green (needed-by date 3 or more days away), amber (due today, tomorrow or the day after) and red (overdue), and that only open reviews are counted.
+- The amber label now reads "Due within 2 days". It said "Due in 48 hours", but the band counts calendar days, so an agreement due the day after tomorrow could be up to about 72 hours away.
+
 ## 2026-10-31 - Workspace loads every row
 
 - Supabase returns at most 1,000 rows per request by default and drops the rest without an error. The workspace read agreements, findings and comments in one request each, so past roughly 1,000 findings the oldest would have gone missing, making older agreements show the wrong status and undercounting Reporting and the review queue's vendor history.
