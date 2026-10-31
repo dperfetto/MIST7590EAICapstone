@@ -3,6 +3,7 @@ import { currentUser, supabase } from "@/lib/supabaseClient";
 import { localRead } from "@/lib/demoStore";
 import { type FindingComment } from "@/lib/comments";
 import { type PlaybookVersion } from "@/lib/playbookVersions";
+import { readInBatches } from "@/lib/batches";
 
 const camelAgreement = (r: any): Agreement => ({
   id: r.id,
@@ -68,11 +69,20 @@ const camelPlaybookVersion = (r: any): PlaybookVersion => ({
 // Tables added after the first release: until schema.sql is rerun they do not
 // exist, so read them as empty rather than failing the whole workspace.
 const missingTable = (error: any) => error?.code === "PGRST205" || error?.code === "42P01";
-const optionalRows = async (query: PromiseLike<{ data: any[] | null; error: any }>) => {
-  const { data, error } = await query;
-  if (error && !missingTable(error)) throw error;
-  return error ? [] : data || [];
+const optionalTable = (error: any): any[] => {
+  if (missingTable(error)) return [];
+  throw error;
 };
+// Read a whole table, in batches (see readInBatches). The last order column
+// should be unique so batches neither skip nor repeat rows.
+type Order = [column: string, ascending?: boolean];
+async function readAll(table: string, order: Order[]) {
+  return readInBatches<any>((from, to) => {
+    let query = supabase!.from(table).select("*", { count: "exact" });
+    for (const [column, ascending = true] of order) query = query.order(column, { ascending });
+    return query.range(from, to);
+  });
+}
 export async function getAuditPage(
   page = 1,
   pageSize = 25,
@@ -149,24 +159,11 @@ export async function getEvaluations(): Promise<EvaluationRun[]> {
     .select("*")
     .order("run_at", { ascending: false });
   if (runs.error) throw runs.error;
-  // Supabase caps a request at 1,000 rows by default, so page through.
-  const readAll = async (table: string, order: string[]) => {
-    const rows: any[] = [];
-    for (let from = 0; ; from += 1000) {
-      let query = supabase!.from(table).select("*");
-      for (const column of order) query = query.order(column);
-      const page = await query.range(from, from + 999);
-      if (page.error) throw page.error;
-      rows.push(...(page.data || []));
-      if ((page.data || []).length < 1000) break;
-    }
-    return rows;
-  };
   const [resultRows, checkRows] = await Promise.all([
-    readAll("evaluation_results", ["run_id", "contract", "provision"]),
+    readAll("evaluation_results", [["run_id"], ["contract"], ["provision"]]),
     // Until schema.sql is rerun this table does not exist; show no checks
     // rather than failing the whole page.
-    readAll("independent_check_results", ["run_id", "document", "provision", "version"]).catch(
+    readAll("independent_check_results", [["run_id"], ["document"], ["provision"], ["version"]]).catch(
       (error) => {
         if (missingTable(error)) return [];
         throw error;
@@ -223,36 +220,30 @@ export async function getEvaluations(): Promise<EvaluationRun[]> {
 export async function getWorkspace(): Promise<Data> {
   if (!supabase) return localRead();
   const user = await currentUser();
-  const [profile, a, f, r, au] = await Promise.all([
+  // Agreements, findings, comments and playbook versions are read in full
+  // (see readAll); the audit log shows the latest 100 here and pages on its own screen.
+  const newestFirst: Order[] = [["created_at", false], ["id", false]];
+  const [profile, r, au, agreementRows, findingRows, comments, versions] = await Promise.all([
     supabase.from("profiles").select("*").eq("id", user.id).single(),
-    supabase
-      .from("agreements")
-      .select("*")
-      .order("created_at", { ascending: false }),
-    supabase
-      .from("findings")
-      .select("*")
-      .order("created_at", { ascending: false }),
     supabase.from("playbook_rules").select("*").order("id"),
     supabase
       .from("audit_events")
       .select("*")
       .order("created_at", { ascending: false })
       .limit(100),
+    readAll("agreements", newestFirst),
+    readAll("findings", newestFirst),
+    readAll("finding_comments", [["created_at"], ["id"]]).catch(optionalTable),
+    readAll("playbook_versions", [["version"], ["id"]]).catch(optionalTable),
   ]);
-  const [comments, versions] = await Promise.all([
-    optionalRows(supabase.from("finding_comments").select("*").order("created_at")),
-    optionalRows(supabase.from("playbook_versions").select("*").order("version")),
-  ]);
-  const failed = [profile, a, f, r, au].find((x) => x.error);
+  const failed = [profile, r, au].find((x) => x.error);
   if (failed?.error) throw failed.error;
   if (profile.data.deactivated_at)
     throw new Error("This account has been deactivated. Contact an Administrator if you need access again.");
   const assignedRole = normalizeRole(profile.data.role);
   const users = assignedRole === "administrator"
-    ? await supabase.from("profiles").select("*").order("full_name")
-    : { data: [], error: null };
-  if (users.error) throw users.error;
+    ? await readAll("profiles", [["full_name"], ["id"]])
+    : [];
   return {
     me: {
       id: user.id,
@@ -260,14 +251,14 @@ export async function getWorkspace(): Promise<Data> {
       email: user.email || "",
       role: assignedRole,
     },
-    agreements: (a.data || []).map(camelAgreement),
-    findings: (f.data || []).map(camelFinding),
+    agreements: agreementRows.map(camelAgreement),
+    findings: findingRows.map(camelFinding),
     rules: (r.data || []).map(camelRule),
     audit: (au.data || []).map(camelAudit),
     comments: comments.map(camelComment),
     playbookVersions: versions.map(camelPlaybookVersion),
     aiStatus: "manual-ready",
-    users: (users.data || []).map((row) => ({
+    users: users.map((row) => ({
       id: row.id,
       name: row.full_name || "Unnamed user",
       role: normalizeRole(row.role),
