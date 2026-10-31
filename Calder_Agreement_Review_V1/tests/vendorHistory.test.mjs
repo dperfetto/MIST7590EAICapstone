@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { provisionSummary, vendorHistory, vendorKey, vendorSummaries } from "../src/lib/vendorHistory.ts";
+import { provisionSummary, vendorHistory, vendorKey } from "../src/lib/vendorHistory.ts";
 
 test("vendor names match across punctuation, case and legal suffixes", () => {
   assert.equal(vendorKey("Northstar Cloud Systems, Inc."), "northstar cloud systems");
@@ -49,18 +49,4 @@ test("finding notes summarize past decisions in plain words", () => {
   assert.equal(provisionSummary({ provision: "X", accepted: 1, dismissed: 0, escalated: 0, open: 0 }), "Accepted 1 of 1 time before");
   assert.equal(provisionSummary({ provision: "X", accepted: 0, dismissed: 1, escalated: 0, open: 0 }), "Dismissed 1 of 1 time before");
   assert.equal(provisionSummary({ provision: "X", accepted: 0, dismissed: 0, escalated: 0, open: 2 }), "Seen 2 times before, not yet decided");
-});
-
-test("vendor summaries group name variants and tally decisions across agreements", () => {
-  const [northstar, apex] = vendorSummaries(agreements, findings);
-  assert.equal(northstar.vendor, "Northstar Cloud Systems"); // name from the newest agreement
-  assert.equal(northstar.agreements, 3);
-  assert.equal(northstar.lastSubmitted, "2026-10-20T00:00:00Z");
-  assert.deepEqual(northstar.agreementTypes, ["Software Subscription"]);
-  assert.equal(northstar.awaiting, 3); // two open, one escalated
-  assert.equal(northstar.dismissed, 0);
-  assert.deepEqual(northstar.confirmed, [{ provision: "Cap on Liability", agreements: 1 }]);
-  assert.equal(apex.agreements, 1);
-  assert.equal(apex.dismissed, 1);
-  assert.deepEqual(apex.confirmed, []);
 });

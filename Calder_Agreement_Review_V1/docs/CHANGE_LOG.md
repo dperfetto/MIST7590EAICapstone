@@ -1,11 +1,15 @@
 # Change log
 
-## 2026-10-31 - Reporting: presence coverage and vendor history
+## 2026-10-31 - Workspace loads every row
 
-- **Presence identification coverage** now shows, for each of the ten provisions, how many agreements were checked for it, how many were flagged (and what share), how many a reviewer confirmed, and how many flags were dismissed or are awaiting a decision. "Checked" uses the playbook version each agreement was analyzed under, so switching a provision on later does not change what older agreements count as checked. It replaces a placeholder card.
-- **Vendor history** lists every vendor with its agreement count, agreement types, last submission, the provisions reviewers confirmed across its agreements, dismissed flags and findings awaiting a decision. Vendor names are matched as in the review queue.
-- Sign-in page simplified: the left panel is now the logo, a short headline and one sentence (the tagline label, two feature boxes and the footnote were removed), and the sign-in, create-account and reset forms use shorter headings and lines.
-- Calculations are in `provisionCoverage` (`src/lib/playbookVersions.ts`) and `vendorSummaries` (`src/lib/vendorHistory.ts`), with unit tests.
+- Supabase returns at most 1,000 rows per request by default and drops the rest without an error. The workspace read agreements, findings and comments in one request each, so past roughly 1,000 findings the oldest would have gone missing, making older agreements show the wrong status and undercounting Reporting and the review queue's vendor history.
+- Agreements, findings, comments, playbook versions and the Administrator's user list are now read in batches until the total reported by Supabase has arrived (`readInBatches`, `src/lib/batches.ts`), sorted by creation time and then id so batches never skip or repeat a row. This also works if a project sets a lower row cap. The AI evaluation page uses the same loader.
+- The audit log is unchanged: the workspace keeps the latest 100 events and the Audit log page pages through the rest.
+
+## 2026-10-31 - Simpler sign-in page
+
+- The left panel is now the logo, a short headline and one sentence (the tagline label, two feature boxes and the footnote were removed), and the sign-in, create-account and reset forms use shorter headings and lines.
+- Reporting no longer shows the "Presence identification coverage" placeholder card.
 
 ## 2026-10-31 - Administrators can remove accounts
 

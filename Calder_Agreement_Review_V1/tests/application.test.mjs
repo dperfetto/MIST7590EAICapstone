@@ -430,7 +430,8 @@ test("AI evaluation results are readable by administrators only and never writte
   assert.match(schema, /kind in \('cuad_check_set','independent_check'\)/);
   assert.match(workspace, /<TabsTrigger value="independent">Independent check<\/TabsTrigger>/);
   assert.match(workspace, /function IndependentCheckEvaluation/);
-  assert.match(data, /const readAll = [\s\S]*?\.range\(from, from \+ 999\)/);
+  assert.match(data, /async function readAll[\s\S]*?readInBatches[\s\S]*?\.range\(from, to\)/);
+  assert.match(data, /readAll\("evaluation_results"/);
   assert.match(data, /readAll\("evaluation_results"/);
   assert.match(data, /readAll\("independent_check_results"/);
   assert.match(workspace, /\["evaluation", "AI evaluation", FlaskConical\]/);
@@ -524,4 +525,13 @@ test("Profile & access explains the name field and what each role can do", () =>
   for (const role of ["submitter", "reviewer", "approver", "administrator"])
     assert.match(workspace, new RegExp(`  ${role}: \\["`));
   assert.match(workspace, /Assign roles and remove accounts/);
+});
+
+test("the workspace loads every agreement, finding and comment, not just the first 1,000", () => {
+  assert.match(data, /readAll\("agreements", newestFirst\)/);
+  assert.match(data, /readAll\("findings", newestFirst\)/);
+  assert.match(data, /readAll\("finding_comments"/);
+  assert.match(data, /const newestFirst: Order\[\] = \[\["created_at", false\], \["id", false\]\]/);
+  assert.match(data, /select\("\*", \{ count: "exact" \}\)/);
+  assert.doesNotMatch(data, /from\("findings"\)\s*\.select\("\*"\)\s*\.order/);
 });
